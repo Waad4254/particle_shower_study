@@ -1,0 +1,435 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>WebGL ZSplines Demo</title>
+    <link rel="stylesheet" type="text/css" href="./common/css/style.css">
+    <link rel="stylesheet" type="text/css" href="study.css">
+    <script type="text/javascript" src="./common/lib/dat.gui.min.js"></script>
+    <script type="module" src="./app.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/vega@5.28.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.18.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.25.0"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        font-family: "Open Sans", sans-serif;
+        padding: 0;
+        margin: 3px;
+        overflow: hidden;
+      }
+
+      #context-menu {
+        position: fixed;
+        z-index: 10000;
+        width: 150px;
+        background: #1b1a1a;
+        border-radius: 5px;
+        transform: scale(0);
+        transform-origin: top left;
+      }
+
+      #context-menu.visible {
+        transform: scale(1);
+        transition: transform 200ms ease-in-out;
+      }
+
+      #context-menu .item {
+        padding: 8px 10px;
+        font-size: 12px;
+        color: #ffffff;
+        cursor: pointer;
+        border-radius: inherit;
+      }
+
+      #context-menu .item:hover {
+        background: #343434;
+      }
+
+      textarea {
+        width: 20%;
+        height: 100px;
+        position: fixed;
+        padding: 12px 20px;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        background-color: #f8f8f8;
+        font-size: 16px;
+      }
+
+      input[type="range"] {
+        width: 400px;
+      }
+
+      select {
+        margin: 10px;
+      }
+
+      label {
+        font-family: "Open Sans", sans-serif;
+        margin: 5px;
+        font-size: 13px;
+        font-weight: bold;
+      }
+
+      button {
+        background-color: #04AA6D; 
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 12px;
+      }
+      button:hover { background-color: #3e8e41 }
+      button:active {
+        background-color: #3e8e41;
+        box-shadow: 0 5px #666;
+        transform: translateY(4px);
+      }
+
+      div.fixed {
+        position: fixed;
+        overflow: auto;
+        bottom: 1;
+        right: 1;
+        width: 480px;
+        height: 500px;
+        border: 3px solid #000000;
+        background-color: #ffffff;
+      }
+
+      #widnow {
+        position: fixed;
+        width: 480px;
+        height: 450px;
+        display: none;
+      }
+
+      #title_bar {
+        background: #363636;
+        border: 3px solid #363636;
+        opacity: 0.8;
+        height: 25px;
+        width: 100%;
+        color: white;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+      }
+
+      #button {
+        position: relative;
+        bottom: 0;
+        right: 0;
+        width: 25px;
+        height: 25px;
+        float: right;
+        cursor: pointer;
+        background-color: #363636;
+        color: white;
+        opacity: 1.0;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+      }
+
+      #button:hover { background-color: #445245 }
+
+      #vis {
+        position: fixed;
+        bottom: 1;
+        right: 1;
+        width: 480px;
+        height: 500px;
+        border: 3px solid #000000;
+        background-color: #ffffff;
+      }
+
+      .vega-actions a {
+        margin-right: 50px;
+      }
+
+      /* Start Task Overlay Styling */
+      #startTaskButton {
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        z-index: 10001;
+        padding: 12px 20px;
+        font-size: 14px;
+        background-color: #04AA6D;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+
+      #startTaskButton:hover {
+        background-color: #038a56;
+      }
+
+      #taskOverlay {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translate(-50%, 0);
+        background: white;
+        padding: 20px;
+        padding-bottom: 60px;
+        border: 2px solid black;
+        z-index: 10000;
+        display: none;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        border-radius: 8px;
+        width: 300px;
+      }
+
+      #taskOverlay p {
+        margin: 0 0 15px 0;
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      .taskButtonContainer {
+        text-align: center;
+        margin-top: 10px;
+        display: flex;
+        justify-content: center;
+        margin-top: 15px;
+      }
+
+      #taskOverlay button {
+        padding: 10px 20px;
+        font-size: 14px;
+        cursor: pointer;
+        background-color: #04AA6D;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        display: inline-block;
+      }
+
+      #taskOverlay button:hover {
+        background-color: #038a56;
+      }
+
+      /* CENTERING RULE FOR ALL UI BLOCKS */
+      .study-block {
+        max-width: 850px;
+        margin: 12vh auto;
+        text-align: left; /* Aligns all paragraphs and forms to the left */
+      }
+      
+      .study-block h2 {
+        text-align: center; /* Keeps the main screen titles centered */
+      }
+
+      #block-countdown {
+        text-align: center; /* Keeps the countdown screen fully centered */
+      }
+
+      /* UNIFIED STUDY BUTTONS */
+      .study-btn {
+        display: block !important;
+        margin: 30px auto !important;
+        width: 250px;
+        height: 50px;
+        font-size: 16px;
+        font-weight: bold;
+        background-color: #04AA6D !important; /* Standard Green */
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .study-btn:hover:not(:disabled) { 
+        background-color: #038a56 !important; 
+      }
+      .study-btn:disabled { 
+        background-color: #6c757d !important; /* Grey when disabled */
+        cursor: not-allowed !important; 
+      }
+
+      /* STEPPER PROGRESS BAR */
+      .progress-node {
+        position: relative;
+        z-index: 3;
+        background: #333;
+        color: #777;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+      }
+      .progress-node.active {
+        background: #04AA6D;
+        color: white;
+        box-shadow: 0 0 8px rgba(4, 170, 109, 0.8); /* Glowing effect for current trial */
+      }
+      .progress-node.completed {
+        background: #04AA6D;
+        color: white;
+      }
+
+    </style>
+
+  </head>
+  <body>
+    <aside>
+      <div id="widnow">
+        <div id="title_bar">
+          2D View
+          <div id="button">-</div>
+        </div>
+        <div id="vis"></div>
+      </div>
+
+      <div id="context-menu">
+        <div id="annotate" class="item">Add Annotation</div>
+      </div>
+
+      <script type="module" src="./vega.js"></script>
+      <script type="module">
+        $("#button").click(function () {
+          if ($(this).html() == "-") {
+            $(this).html("+");
+          } else {
+            $(this).html("-");
+          }
+          $("#vis").slideToggle();
+        });
+      </script>
+    </aside>
+
+    <div id="study-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; overflow-y: auto; display: none; pointer-events: none;">
+      
+      <div id="block-consent" class="study-block">
+        <h2>Consent & Demographics</h2>
+        <p>Thank you for participating. This study evaluates 3D visualization techniques for HGCal particle showers. It will take approximately 20 minutes.</p>
+        <label><input type="checkbox" id="consent-check"> I consent to participate</label><br><br>
+        
+        <p>Age: <select id="demo-age"><option value="" disabled selected>Select age...</option><option>18-24</option><option>25-34</option><option>35-44</option><option>45+</option></select></p>
+        <p>Gender: <select id="demo-gender"><option value="" disabled selected>Select gender...</option><option>Male</option><option>Female</option><option>Other/Prefer not to say</option></select></p>
+        <p>Role: <select id="demo-role"><option value="" disabled selected>Select role...</option><option>Physicist / Physics Student</option><option>Engineer / Computer Scientist</option><option>Other</option></select></p>
+        <p>Familiarity with Particle Physics (1-7), where 1 is lowest and 7 is highest:<br>
+            <label><input type="radio" name="demo-phys" value="1"> 1</label> 
+            <label><input type="radio" name="demo-phys" value="2"> 2</label> 
+            <label><input type="radio" name="demo-phys" value="3"> 3</label> 
+            <label><input type="radio" name="demo-phys" value="4"> 4</label> 
+            <label><input type="radio" name="demo-phys" value="5"> 5</label> 
+            <label><input type="radio" name="demo-phys" value="6"> 6</label> 
+            <label><input type="radio" name="demo-phys" value="7"> 7</label>
+        </p>
+        <p>Familiarity with 3D Graphics/CAD (1-7), where 1 is lowest and 7 is highest:<br>
+            <label><input type="radio" name="demo-3d" value="1"> 1</label> 
+            <label><input type="radio" name="demo-3d" value="2"> 2</label> 
+            <label><input type="radio" name="demo-3d" value="3"> 3</label> 
+            <label><input type="radio" name="demo-3d" value="4"> 4</label> 
+            <label><input type="radio" name="demo-3d" value="5"> 5</label> 
+            <label><input type="radio" name="demo-3d" value="6"> 6</label> 
+            <label><input type="radio" name="demo-3d" value="7"> 7</label>
+        </p>
+
+        <button id="btn-start-tutorial" class="study-btn" disabled>Proceed to Tutorial</button>
+      </div>
+
+      <div id="block-tutorial" class="study-block" style="display: none;">
+        <h2>Tutorial & Instructions</h2>
+        <p>In this study, you will complete three types of tasks (T1, T2, T3). Your interactions will change depending on the current task:</p>
+        
+        <ul style="text-align: left; line-height: 1.6; margin-bottom: 25px;">
+            <li><b>Navigation:</b> Use your mouse to rotate, pan, and zoom the 3D model.</li>
+            <li><b>Task 1 (Comparisons):</b> You will identify tracks. The camera is <b>locked</b> to a fixed viewpoint.</li>
+            <li><b>Task 2 (Energy Tasks):</b> You can click tracks to select them and inspect energy levels.</li>
+            <li><b>Task 3 (Parent/Daughter):</b> You can click multiple tracks to build a selection.</li>
+            <li><b>Important Note:</b> Some interactive tools (like the UI sliders or the 2d schematic view) will be <b>hidden or disabled</b> during specific trials to ensure you focus only on the visual data.</li>
+        </ul>
+
+        <p>Please click "Start Measured Trials" when you are ready to begin.</p>
+        <button id="btn-start-trials" class="study-btn">Start Measured Trials</button>
+      </div>
+
+      <div id="block-countdown" class="study-block" style="display: none;">
+        <h2>Trial Ready</h2>
+        <p>Position your hand on the mouse. The timer will start immediately after the countdown.</p>
+        <button id="btn-begin-trial" class="study-btn">Start Trial</button>
+      </div>
+
+      <div id="block-questionnaire" class="study-block" style="display: none;">
+        <h2>Post-Study Questionnaire</h2>
+        <div id="questionnaire-form" style="text-align: left; margin: 20px auto; max-width: 800px;">
+          <p>Q1. The spatial layout was easy to understand (1-7), where 1 is lowest and 7 is highest:<br>
+              <label><input type="radio" name="q1" value="1"> 1</label>
+              <label><input type="radio" name="q1" value="2"> 2</label>
+              <label><input type="radio" name="q1" value="3"> 3</label>
+              <label><input type="radio" name="q1" value="4"> 4</label>
+              <label><input type="radio" name="q1" value="5"> 5</label>
+              <label><input type="radio" name="q1" value="6"> 6</label>
+              <label><input type="radio" name="q1" value="7"> 7</label>
+          </p>
+          <p>Q2. The visual features helped me complete the tasks faster (1-7), where 1 is lowest and 7 is highest:<br>
+              <label><input type="radio" name="q2" value="1"> 1</label>
+              <label><input type="radio" name="q2" value="2"> 2</label>
+              <label><input type="radio" name="q2" value="3"> 3</label>
+              <label><input type="radio" name="q2" value="4"> 4</label>
+              <label><input type="radio" name="q2" value="5"> 5</label>
+              <label><input type="radio" name="q2" value="6"> 6</label>
+              <label><input type="radio" name="q2" value="7"> 7</label>
+          </p>
+          <p>Q3. I felt confident in my selections (1-7), where 1 is lowest and 7 is highest:<br>
+              <label><input type="radio" name="q3" value="1"> 1</label>
+              <label><input type="radio" name="q3" value="2"> 2</label>
+              <label><input type="radio" name="q3" value="3"> 3</label>
+              <label><input type="radio" name="q3" value="4"> 4</label>
+              <label><input type="radio" name="q3" value="5"> 5</label>
+              <label><input type="radio" name="q3" value="6"> 6</label>
+              <label><input type="radio" name="q3" value="7"> 7</label>
+          </p>
+          <p>Q4. Any additional comments? (Optional)<br>
+              <textarea id="q4-text" style="width: 100%; height: 60px; position: static;"></textarea>
+          </p>
+          <br>
+          <button id="btn-submit-study" class="study-btn" disabled>Submit & Finish</button>        </div>
+      </div>
+
+      <div id="block-thanks" class="study-block" style="display: none;">
+        <h2>Study Complete</h2>
+        <p>Participation code: <strong id="completion-code"></strong></p>
+        <p>Thank you for your time, you may now safely close this window.</p>
+      </div>
+    </div>
+
+    <div id="study-prompt-panel" style="display: none; pointer-events: none; width: 650px;">
+      
+      <div style="position: relative; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%;">
+        <div style="position: absolute; top: 50%; left: 0; width: 100%; height: 4px; background: #333; z-index: 1; transform: translateY(-50%); border-radius: 2px;"></div>
+        <div id="trial-progress-line" style="position: absolute; top: 50%; left: 0; width: 0%; height: 4px; background: #04AA6D; z-index: 2; transform: translateY(-50%); transition: width 0.3s ease; border-radius: 2px;"></div>
+        
+        <div class="progress-node" id="node-0">T1.1</div>
+        <div class="progress-node" id="node-1">T1.2</div>
+        <div class="progress-node" id="node-2">T2.1</div>
+        <div class="progress-node" id="node-3">T2.2</div>
+        <div class="progress-node" id="node-4">T3.1</div>
+        <div class="progress-node" id="node-5">T3.2</div>
+      </div>
+      <h3 id="task-prompt-text" style="margin-top: 0;">Task Prompt Here</h3>
+      <div id="task-controls"></div>
+    </div>
+
+    <script src="study.js"></script>
+  </body>
+</html>

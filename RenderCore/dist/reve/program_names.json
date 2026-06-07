@@ -1,0 +1,24 @@
+[
+  "custom_copyTexture",
+  "custom_copyDepthToRed",
+  "custom_GBufferMini",
+  "custom_outline",
+  "custom_gaussBlur",
+  "custom_blendingAdditive",
+  "custom_ToneMapping",
+  "phong",
+  "basic",
+  "basic_zsprite",
+  "basic_stripes",
+  "custom_GBufferMini_stripes",
+  "custom_picker_TRIANGLES",
+  "custom_picker_POINTS",
+  "custom_text2D",
+  "custom_ZText",
+  "custom_ZSplines",
+  "custom_ZSplinesLighting",
+  "custom_colorMasking",
+  "custom_normalMasking"
+
+
+]

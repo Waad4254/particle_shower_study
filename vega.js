@@ -18,7 +18,7 @@ var view;
 
 export function initVega(datasetUrl = '/data/output.json') {
 
-    fetch('/data/tree-layout-edits.json')
+    fetch('./data/tree-layout-edits.json')
         .then((response) => response.json())
         .then(spec => {
 

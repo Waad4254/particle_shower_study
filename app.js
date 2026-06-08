@@ -3,7 +3,7 @@ import { _Math } from "./RenderCore/src/math/Math.js";
 import { Vector3 } from "./RenderCore/src/math/Vector3.js";
 import { Pane } from "./common/lib/tweakpane-4.0.3.min.js"
 import * as tree from "./common/lib/TreeModel-min.js"
-import * as jq from "http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js";
+import * as jq from "https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js";
 import {initVega} from "./vega.js"
 
 //TreeModel-min.js

@@ -76,15 +76,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const trial = trialSequence[currentTrialIndex];
         
         let finalAnswer = actionData;
-        if (trial.task === 'T2') finalAnswer = selectedTrackT2;
-        if (trial.task === 'T3') finalAnswer = [...candidateTracks];
+        // ONLY override the answer with the track selections if they DID NOT click "I don't know"
+        if (actionData !== 'IDK') {
+            if (trial.task === 'T2') finalAnswer = selectedTrackT2;
+            if (trial.task === 'T3') finalAnswer = [...candidateTracks];
+        }
 
         // Grading
         let isCorrect = false;
         const trialKey = `${trial.task}_${trial.condition}`;
         const truth = groundTruth[trialKey];
-        if (trial.task === 'T1' || trial.task === 'T2') isCorrect = (finalAnswer === truth);
-        if (trial.task === 'T3') isCorrect = JSON.stringify([...finalAnswer].sort()) === JSON.stringify([...truth].sort());
+        // if (trial.task === 'T1' || trial.task === 'T2') isCorrect = (finalAnswer === truth);
+        // if (trial.task === 'T3') isCorrect = JSON.stringify([...finalAnswer].sort()) === JSON.stringify([...truth].sort());
+
+        if (finalAnswer !== 'IDK') { // If they don't know, it's automatically false
+            if (trial.task === 'T1' || trial.task === 'T2') isCorrect = (finalAnswer === truth);
+            if (trial.task === 'T3') isCorrect = JSON.stringify([...finalAnswer].sort()) === JSON.stringify([...truth].sort());
+        }
 
         // Construct Telemetry with EXACT Timestamps
         const trialRecord = {
@@ -295,13 +303,39 @@ document.addEventListener('DOMContentLoaded', () => {
         // }
 
         // Inject the actual task controls using robust Flexbox
+        // const controlsDiv = document.getElementById('task-controls');
+        // if (trial.task === 'T1') {
+        //     controlsDiv.innerHTML = `<div style="display: flex; justify-content: space-between; width: 320px; margin: 15px auto 0 auto;"><button onclick="window.hgcalStudy.submitAnswer('RED')" style="width: 145px; height: 48px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">RED Track</button><button onclick="window.hgcalStudy.submitAnswer('BLUE')" style="width: 145px; height: 48px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">BLUE Track</button></div>`;
+        // } else if (trial.task === 'T2') {
+        //     controlsDiv.innerHTML = `<div style="text-align: center; margin-top: 15px;"><button id="t2-confirm-btn" onclick="window.hgcalStudy.submitAnswer('SUBMIT')" disabled style="width: 180px; height: 48px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: bold; font-size: 14px;">Confirm</button></div>`;
+        // } else if (trial.task === 'T3') {
+        //     controlsDiv.innerHTML = `<div style="text-align: center;"><p style="margin: 5px 0 10px 0; font-size: 14px; color: #ccc;">Tracks selected: <span id="t3-count" style="font-weight:bold; color:white;">0</span></p><button onclick="window.hgcalStudy.submitAnswer('SUBMIT')" style="width: 180px; height: 48px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">Confirm</button></div>`;
+        // }
+
+        // Inject the actual task controls using robust Flexbox
         const controlsDiv = document.getElementById('task-controls');
         if (trial.task === 'T1') {
-            controlsDiv.innerHTML = `<div style="display: flex; justify-content: space-between; width: 320px; margin: 15px auto 0 auto;"><button onclick="window.hgcalStudy.submitAnswer('RED')" style="width: 145px; height: 48px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">RED Track</button><button onclick="window.hgcalStudy.submitAnswer('BLUE')" style="width: 145px; height: 48px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">BLUE Track</button></div>`;
+            controlsDiv.innerHTML = `
+                <div style="display: flex; justify-content: center; gap: 8px; margin-top: 15px;">
+                    <button onclick="window.hgcalStudy.submitAnswer('RED')" style="width: 100px; height: 48px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">RED</button>
+                    <button onclick="window.hgcalStudy.submitAnswer('BLUE')" style="width: 100px; height: 48px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">BLUE</button>
+                    <button onclick="window.hgcalStudy.submitAnswer('IDK')" style="width: 100px; height: 48px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">IDK</button>
+                </div>`;
         } else if (trial.task === 'T2') {
-            controlsDiv.innerHTML = `<div style="text-align: center; margin-top: 15px;"><button id="t2-confirm-btn" onclick="window.hgcalStudy.submitAnswer('SUBMIT')" disabled style="width: 180px; height: 48px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: bold; font-size: 14px;">Confirm</button></div>`;
+            controlsDiv.innerHTML = `
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
+                    <button id="t2-confirm-btn" onclick="window.hgcalStudy.submitAnswer('SUBMIT')" disabled style="width: 140px; height: 48px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: bold; font-size: 14px;">Confirm</button>
+                    <button onclick="window.hgcalStudy.submitAnswer('IDK')" style="width: 140px; height: 48px; background: #343a40; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">IDK</button>
+                </div>`;
         } else if (trial.task === 'T3') {
-            controlsDiv.innerHTML = `<div style="text-align: center;"><p style="margin: 5px 0 10px 0; font-size: 14px; color: #ccc;">Tracks selected: <span id="t3-count" style="font-weight:bold; color:white;">0</span></p><button onclick="window.hgcalStudy.submitAnswer('SUBMIT')" style="width: 180px; height: 48px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">Confirm</button></div>`;
+            controlsDiv.innerHTML = `
+                <div style="text-align: center;">
+                    <p style="margin: 5px 0 10px 0; font-size: 14px; color: #ccc;">Tracks selected: <span id="t3-count" style="font-weight:bold; color:white;">0</span></p>
+                    <div style="display: flex; justify-content: center; gap: 10px;">
+                        <button onclick="window.hgcalStudy.submitAnswer('SUBMIT')" style="width: 140px; height: 48px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">Confirm</button>
+                        <button onclick="window.hgcalStudy.submitAnswer('IDK')" style="width: 140px; height: 48px; background: #343a40; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">IDK</button>
+                    </div>
+                </div>`;
         }
     }
 

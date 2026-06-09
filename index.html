@@ -349,17 +349,18 @@
 
       <div id="block-tutorial" class="study-block" style="display: none;">
         <h2>Tutorial & Instructions</h2>
-        <p>In this study, you will complete three types of tasks (T1, T2, T3). Your interactions will change depending on the current task:</p>
+        <p>In this study, you will complete three types of tasks (T1, T2, T3) using 3D simulated particle showers. Please follow these interaction rules:</p>
         
         <ul style="text-align: left; line-height: 1.6; margin-bottom: 25px;">
-            <li><b>Navigation:</b> Use your mouse to rotate, pan, and zoom the 3D model.</li>
-            <li><b>Task 1 (Comparisons):</b> You will identify tracks. The camera is <b>locked</b> to a fixed viewpoint.</li>
-            <li><b>Task 2 (Energy Tasks):</b> You can click tracks to select them and inspect energy levels.</li>
-            <li><b>Task 3 (Parent/Daughter):</b> You can click multiple tracks to build a selection.</li>
-            <li><b>Important Note:</b> Some interactive tools (like the UI sliders or the 2d schematic view) will be <b>hidden or disabled</b> during specific trials to ensure you focus only on the visual data.</li>
+            <li><b>Navigation:</b> Use your mouse to rotate, pan, and zoom the 3D model (except in Task 1).</li>
+            <li><b>Task 1 (Comparisons):</b> You must identify specific tracks. The camera is <b>locked</b> to a fixed viewpoint.</li>
+            <li><b>Task 2 (Energy Tasks):</b> Click a 3D track to select it and inspect its energy properties.</li>
+            <li><b>Task 3 (Parent/Daughter):</b> Click multiple tracks to build a selection. The "parent" track will be highlighted in <b>RED</b> for your reference.</li>
+            <li><b>2D Schematic View:</b> When the 2D window is visible, clicking a 3D track will highlight its corresponding node in the 2D view. Conversely, clicking a node in the 2D view will instantly filter the 3D shower to show only that specific subtree.</li>
+            <li><b>Interaction Note:</b> Some tools (like the UI sliders or the 2D view) will be automatically <b>hidden or disabled</b> during specific trials to ensure data integrity. If you are ever unsure of an answer, please use the <b>"I don't know"</b> button to avoid random guessing.</li>
         </ul>
 
-        <p>Please click "Start Measured Trials" when you are ready to begin.</p>
+        <p>Click "Start Measured Trials" when you are ready to begin.</p>
         <button id="btn-start-trials" class="study-btn">Start Measured Trials</button>
       </div>
 

@@ -177,7 +177,7 @@
         "on": [
           {
             "events": {"signal": "delta"},
-            "update": "[xcur[0] - span(xcur) * delta[0] / width, xcur[1] - span(xcur) * delta[0] / width]"
+            "update": "[xcur[0] + span(xcur) * delta[0] / width, xcur[1] + span(xcur) * delta[0] / width]"
           },
           {
             "events": {"signal": "zoom"},

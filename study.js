@@ -42,9 +42,10 @@ document.addEventListener('DOMContentLoaded', () => {
         { task: 'T1', condition: 'A', dataset: './data/t1a_ready.json', desc: "Of the two highlighted trajectories, which one is closer to the camera?", trackRed: 9025, trackBlue: 9018 },
         { task: 'T1', condition: 'B', dataset: './data/t1b_ready.json', desc: "Of the two highlighted trajectories, which one is closer to the camera?", trackRed: 9025, trackBlue: 9018 },
         { task: 'T2', condition: 'A', dataset: './data/t2a_ready.json', desc: "Click on the highest-energy trajectory in this shower." },
+        { task: 'T2', condition: 'A_Color', dataset: './data/t2a_ready.json', desc: "Click on the highest-energy trajectory in this shower. (Tracks are colored by Energy level)" }, 
         { task: 'T2', condition: 'B', dataset: './data/t2b_ready.json', desc: "Click on the highest-energy trajectory in this shower." },
-        { task: 'T3', condition: 'A', dataset: './data/t3b_ready.json', desc: "Find all direct daughter trajectories of the highlighted parent track.", parentTrack: 574 },
-        { task: 'T3', condition: 'B', dataset: './data/t3b_ready.json', desc: "Find all direct daughter trajectories of the highlighted parent track.", parentTrack: 574 }
+        { task: 'T3', condition: 'A', dataset: './data/t3b_ready.json', desc: "Find all direct daughter trajectories of the highlighted parent track.", parentTrack: 2390 },
+        { task: 'T3', condition: 'B', dataset: './data/t3b_ready.json', desc: "Find all direct daughter trajectories of the highlighted parent track.", parentTrack: 2390 }
     ];
 // blue blue, 1, 1, 575, 575
     let currentTrialIndex = 0;
@@ -62,9 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
         "T1_A": "BLUE",
         "T1_B": "BLUE",
         "T2_A": 1,           // Replace with actual highest-energy track ID for condition A
+        "T2_A_Color": 1,
         "T2_B": 1,            // Replace with actual highest-energy track ID for condition B
-        "T3_A": [575],   // Replace with actual daughter track IDs for condition A
-        "T3_B": [575]      // Replace with actual daughter track IDs for condition B
+        "T3_A": [2396, 2397],   // Replace with actual daughter track IDs for condition A
+        "T3_B": [2396, 2397]      // Replace with actual daughter track IDs for condition B
     };
 
     // 3. Core Answer Submission and Telemetry Logic
@@ -125,18 +127,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!trial) return;
         
         if (trial.task === 'T2') {
-            selectedTrackT2 = trackId;
-            
-            const confirmBtn = document.getElementById('t2-confirm-btn');
-            if (confirmBtn) {
-                confirmBtn.disabled = false;
-                confirmBtn.style.background = '#28a745';
-                confirmBtn.style.cursor = 'pointer';
+            // --- NEW: Toggle Logic for T2 ---
+            if (selectedTrackT2 === trackId) {
+                // Unselect if clicking the same track
+                selectedTrackT2 = null; 
+                window.dispatchEvent(new CustomEvent("highlightSelection", { detail: [] }));
+                
+                const confirmBtn = document.getElementById('t2-confirm-btn');
+                if (confirmBtn) {
+                    confirmBtn.disabled = true;
+                    confirmBtn.style.background = '#6c757d';
+                    confirmBtn.style.cursor = 'not-allowed';
+                }
+                console.log(`[T2] Track unselected`);
+            } else {
+                // Select new track
+                selectedTrackT2 = trackId;
+                window.dispatchEvent(new CustomEvent("highlightSelection", { detail: [trackId] }));
+                
+                const confirmBtn = document.getElementById('t2-confirm-btn');
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                    confirmBtn.style.background = '#28a745';
+                    confirmBtn.style.cursor = 'pointer';
+                }
+                console.log(`[T2] Track selected: ${trackId}`);
             }
-            console.log(`[T2] Track selected: ${trackId}`);
-            
-            // Highlight the clicked track in Cyan
-            window.dispatchEvent(new CustomEvent("highlightSelection", { detail: [trackId] }));
             
         } else if (trial.task === 'T3') {
             // Toggle selection array
@@ -187,6 +203,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Hide the 3D prompt panel
             document.getElementById('study-prompt-panel').style.display = 'none';
             document.getElementById('study-prompt-panel').style.pointerEvents = 'none';
+            
+            // --- NEW: Hide the floating HUDs during surveys/tutorials ---
+            const navInfo = document.getElementById('nav-info');
+            const contextInfo = document.getElementById('context-overlay');
+            if (navInfo) navInfo.style.display = 'none';
+            if (contextInfo) contextInfo.style.display = 'none';
+            // -------------------------------------------------------------
             
             const targetBlock = document.getElementById(blockId);
             if(targetBlock) {
@@ -297,20 +320,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Set the text
         document.getElementById('task-prompt-text').innerText = trial.desc;
-        // // Highlight parent for T3
-        // if (trial.task === 'T3' && trial.parentTrack) {
-        //     window.dispatchEvent(new CustomEvent("highlightParent", { detail: trial.parentTrack }));
-        // }
 
-        // Inject the actual task controls using robust Flexbox
-        // const controlsDiv = document.getElementById('task-controls');
-        // if (trial.task === 'T1') {
-        //     controlsDiv.innerHTML = `<div style="display: flex; justify-content: space-between; width: 320px; margin: 15px auto 0 auto;"><button onclick="window.hgcalStudy.submitAnswer('RED')" style="width: 145px; height: 48px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">RED Track</button><button onclick="window.hgcalStudy.submitAnswer('BLUE')" style="width: 145px; height: 48px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">BLUE Track</button></div>`;
-        // } else if (trial.task === 'T2') {
-        //     controlsDiv.innerHTML = `<div style="text-align: center; margin-top: 15px;"><button id="t2-confirm-btn" onclick="window.hgcalStudy.submitAnswer('SUBMIT')" disabled style="width: 180px; height: 48px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: bold; font-size: 14px;">Confirm</button></div>`;
-        // } else if (trial.task === 'T3') {
-        //     controlsDiv.innerHTML = `<div style="text-align: center;"><p style="margin: 5px 0 10px 0; font-size: 14px; color: #ccc;">Tracks selected: <span id="t3-count" style="font-weight:bold; color:white;">0</span></p><button onclick="window.hgcalStudy.submitAnswer('SUBMIT')" style="width: 180px; height: 48px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">Confirm</button></div>`;
-        // }
+        // --- CONTEXT & NAVIGATION OVERLAYS ---
+        const navInfo = document.getElementById('nav-info');
+        const contextInfo = document.getElementById('context-overlay');
+        const contextTitle = document.getElementById('context-title-span');
+        const contextBody = document.getElementById('context-body');
+        
+        navInfo.style.display = 'block';
+        if (trial.task === 'T1') {
+            navInfo.innerHTML = `<b style="color:#04AA6D;">Navigation:</b><br>Fixed Camera (Locked)<br><br><b style="color:#04AA6D;">Selection:</b><br>Use the buttons below to record your answer.`;
+            contextInfo.style.display = 'none';
+        } else if (trial.task === 'T2') {
+            navInfo.innerHTML = `<b style="color:#04AA6D;">Navigation:</b><br>• <b>Rotate:</b> Left Click + Drag<br>• <b>Pan:</b> Right Click + Drag<br>• <b>Zoom:</b> Scroll Wheel<br><br><b style="color:#04AA6D;">Selection:</b><br>• <b>Left Click</b> to highlight a track.`;
+            
+            contextInfo.style.display = 'block';
+            contextInfo.open = true; // Auto-expand when a new trial loads
+            
+            // --- NEW: Split context based on IOR active (Condition B) ---
+            if (trial.condition === 'B') {
+                contextTitle.innerText = "IOR Filtering";
+                contextBody.innerHTML = `<b>Importance-Ordered Rendering (IOR)</b> is a specialized visualization tool. It categorizes tracks by energy (High = <span style="color:#dc3545; font-weight:bold;">Red</span>, Medium = <span style="color:#28a745; font-weight:bold;">Green</span>, Low = <span style="color:#007bff; font-weight:bold;">Blue</span>) and mathematically forces the critical, high-energy paths to render <i>on top</i> of the dense particle cloud so they are never hidden. You can use the UI sliders to adjust these energy brackets!`;
+            } else {
+                contextTitle.innerText = "Energy";
+                contextBody.innerHTML = `In a particle shower, primary particles have high energy. As they collide and branch out, energy is distributed among daughters. Tracking highest-energy paths helps reconstruct the core collision trajectory.`;
+            }
+            // ------------------------------------------------------------
+        
+        } else if (trial.task === 'T3') {
+            navInfo.innerHTML = `<b style="color:#04AA6D;">3D Navigation:</b><br>• <b>Rotate:</b> Left Click + Drag<br>• <b>Pan:</b> Right Click + Drag<br>• <b>Zoom:</b> Scroll Wheel<br><br><b style="color:#04AA6D;">2D Schematic View:</b><br>• <b>Highlight:</b> Left Click a node.<br>• <b>Filter Subtree:</b> Right Click a node.`;
+
+            contextInfo.style.display = 'block';
+            contextInfo.open = true; // Auto-expand when a new trial loads
+            contextTitle.innerText = "Showers & Daughters";
+            
+            // Injecting the diagram and the explanation
+            contextBody.innerHTML = `
+                <div style="text-align: center;">
+                    <img src="./showers.png" style="width: 100%; border-radius: 6px; margin: 8px 0; border: 1px solid #444;" alt="Particle Shower Diagram">
+                </div>
+                <p style="margin-bottom: 10px; line-height: 1.4;">
+                    <b style="color:#007bff;">Electromagnetic (EM) Showers (Left):</b> Initiated by photons or electrons. They create highly symmetrical branching patterns (like a photon splitting into an electron-positron pair).
+                </p>
+                <p style="margin-bottom: 10px; line-height: 1.4;">
+                    <b style="color:#dc3545;">Hadronic Showers (Right):</b> Initiated by heavier particles (like protons or cosmic rays) striking a nucleus. They create messy, chaotic trees of diverse particles (pions, muons) and can even spawn secondary EM showers.
+                </p>
+                <p style="margin-bottom: 0; line-height: 1.4; background: #333; padding: 8px; border-radius: 4px;">
+                    <b style="color:#ffc107;">Finding Daughters:</b> When a particle decays or collides, the newly created particles are its "daughters." In this task, look for the tracks that branch <i>directly</i> out of the end of the highlighted parent track!
+                </p>`;
+        }
+        // -------------------------------------
 
         // Inject the actual task controls using robust Flexbox
         const controlsDiv = document.getElementById('task-controls');

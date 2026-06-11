@@ -419,6 +419,7 @@ export class ZSplines extends Mesh {
         this.fill = fill;
         this.masked = masked;
         this.importance = trackImportance[0];
+        this.trackImportanceArray = new Float32Array(trackImportance);
 
         // --- NEW: SAVE COLOR STATE FOR HIGHLIGHTING ---
         this.colorsTextureW = colorsTextureW;
@@ -580,49 +581,7 @@ export class ZSplines extends Mesh {
         
     }
 
-    highlightTracks(parentTrackId, selectedTrackIds) {
-        if (!this.originalColors || !this.nodeIds || this.nodeIds.length === 0) return;
 
-        // Reset all tracks to their original colors
-        this.colorsArray.set(this.originalColors);
-        let matchCount = 0;
-
-        // Modify the colors for the specific IDs
-        for (let i = 0; i < this.nodeIds.length; i++) {
-            const id = Number(this.nodeIds[i]);
-            
-            // Check if this ID is in the selected array
-            if (selectedTrackIds && selectedTrackIds.includes(id)) {
-                this.colorsArray[i * 4 + 0] = 1.0; // R (Full Red)
-                this.colorsArray[i * 4 + 1] = 0.0; // G
-                this.colorsArray[i * 4 + 2] = 0.0; // B
-                this.colorsArray[i * 4 + 3] = -1.0;
-                matchCount++;
-            }
-        }
-
-        // Only print if we actually tried to highlight something
-        if (selectedTrackIds && selectedTrackIds.length > 0) {
-            console.log(`[GPU Highlight] Found ${matchCount} matching segments to color Red!`);
-        }
-
-        // Re-upload the texture to the GPU Instance Buffer
-        const ColorsTexture = new Texture(
-            this.colorsArray,
-            Texture.WRAPPING.ClampToEdgeWrapping,
-            Texture.WRAPPING.ClampToEdgeWrapping,
-            Texture.FILTER.LinearFilter,
-            Texture.FILTER.LinearFilter,
-            Texture.FORMAT.RGBA16F,
-            Texture.FORMAT.RGBA,
-            Texture.TYPE.FLOAT,
-            this.colorsTextureW,
-            this.colorsTextureH,
-            this.mainParam
-        );
-        ColorsTexture._generateMipmaps = false;
-        this.material.updateInstanceData(1, ColorsTexture);
-    }
 
     // --- NEW STUDY MODE COLOR MANAGERS ---
     applyTrialColors(trial) {
@@ -635,14 +594,37 @@ export class ZSplines extends Mesh {
             const id = Number(this.nodeIds[i]);
             
             // --- UPDATED LOGIC ---
-            // ONLY use rainbow colors for T2 Condition B (when IOR is active)
+            // T2 Condition B (IOR active) uses original colors (the Shader handles the override)
             if (trial.task === 'T2' && trial.condition === 'B') {
                 this.studyColors[i * 4 + 0] = this.originalColors[i * 4 + 0];
                 this.studyColors[i * 4 + 1] = this.originalColors[i * 4 + 1];
                 this.studyColors[i * 4 + 2] = this.originalColors[i * 4 + 2];
                 this.studyColors[i * 4 + 3] = this.originalColors[i * 4 + 3];
-            } else {
-                // T1, T3, and T2 Condition A (IOR Disabled) get the Gray background
+            } 
+            // T2 Condition A_Color MUST be manually mapped to Energy (Blue/Green/Red)
+            else if (trial.task === 'T2' && trial.condition === 'A_Color') {
+                let imp = this.trackImportanceArray[i];
+                if (imp === 0.0) { // High Energy -> Red
+                    this.studyColors[i * 4 + 0] = 1.0; 
+                    this.studyColors[i * 4 + 1] = 0.0; 
+                    this.studyColors[i * 4 + 2] = 0.0; 
+                } else if (imp === 1.0) { // Med Energy -> Green
+                    this.studyColors[i * 4 + 0] = 0.0; 
+                    this.studyColors[i * 4 + 1] = 1.0; 
+                    this.studyColors[i * 4 + 2] = 0.0; 
+                } else if (imp === 2.0) { // Low Energy -> Blue
+                    this.studyColors[i * 4 + 0] = 0.0; 
+                    this.studyColors[i * 4 + 1] = 0.0; // Bright Cyan/Blue 
+                    this.studyColors[i * 4 + 2] = 1.0; 
+                } else {
+                    this.studyColors[i * 4 + 0] = 0.4; 
+                    this.studyColors[i * 4 + 1] = 0.4; 
+                    this.studyColors[i * 4 + 2] = 0.4; 
+                }
+                this.studyColors[i * 4 + 3] = -0.5; // SECRET OVERRIDE FLAG
+            }
+            // T1, T3, and T2 Condition A (Normal) get the Gray background
+            else {
                 this.studyColors[i * 4 + 0] = 0.4; // R
                 this.studyColors[i * 4 + 1] = 0.4; // G
                 this.studyColors[i * 4 + 2] = 0.4; // B
@@ -677,16 +659,30 @@ export class ZSplines extends Mesh {
     }
 
     updateStudyTexture(selectedTrackIds) {
-        if(!this.studyColors) return; 
-        
-        // Reset to the gray/highlighted base state
-        this.colorsArray.set(this.studyColors);
+        let baseColors = this.studyColors || this.originalColors;
+        if (!baseColors) return;
 
-        // Apply Cyan highlights for anything the user specifically clicks on
-        if (selectedTrackIds && selectedTrackIds.length > 0) {
-            for (let i = 0; i < this.nodeIds.length; i++) {
-                const id = Number(this.nodeIds[i]);
-                if (selectedTrackIds.includes(id)) {
+        for (let i = 0; i < this.nodeIds.length; i++) {
+            const id = Number(this.nodeIds[i]);
+            
+            // --- NEW: Check if this track is filtered out (ghosted) ---
+            let isGhosted = window.app && window.app.activeRenderedIds && !window.app.activeRenderedIds.has(id);
+            
+            if (isGhosted) {
+                // --- FIX: Keep exact base colors (Gray + Red Parent) but drop Alpha ---
+                this.colorsArray[i * 4 + 0] = baseColors[i * 4 + 0];
+                this.colorsArray[i * 4 + 1] = baseColors[i * 4 + 1];
+                this.colorsArray[i * 4 + 2] = baseColors[i * 4 + 2];
+                this.colorsArray[i * 4 + 3] = 0.3; // 15% opacity (transparentish)
+            } else {
+                // Restore to base state
+                this.colorsArray[i * 4 + 0] = baseColors[i * 4 + 0];
+                this.colorsArray[i * 4 + 1] = baseColors[i * 4 + 1];
+                this.colorsArray[i * 4 + 2] = baseColors[i * 4 + 2];
+                this.colorsArray[i * 4 + 3] = baseColors[i * 4 + 3];
+                
+                // Apply Cyan Highlight if selected
+                if (selectedTrackIds && selectedTrackIds.includes(id)) {
                     this.colorsArray[i * 4 + 0] = 0.0; // Cyan
                     this.colorsArray[i * 4 + 1] = 1.0;
                     this.colorsArray[i * 4 + 2] = 1.0;
@@ -704,4 +700,11 @@ export class ZSplines extends Mesh {
         ColorsTexture._generateMipmaps = false;
         this.material.updateInstanceData(1, ColorsTexture);
     }
+
+    highlightTracks(parentTrackId, selectedTrackIds) {
+        // Route Sandbox highlights to the same unified ghosting logic!
+        this.updateStudyTexture(selectedTrackIds);
+    }
+
+
 };

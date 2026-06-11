@@ -164,6 +164,7 @@ class App {
             let useSSAO = true;
             let useIOR = false;
             let useSchematic = false;
+            let useLighting = true;
 
             // Apply condition logic strictly based on the Study Guide
             if (trial.task === 'T1') {
@@ -187,8 +188,32 @@ class App {
             
             if (trial.task === 'T2') {
                 useIOR = (trial.condition === 'B');  // T2 tests IOR
+                // --- NEW: Disable Lighting for T2.2 (A_Color) ---
+                if (trial.condition === 'A_Color') {
+                    useSSAO = false;
+                    useLighting = false; 
+                }
             } else if (trial.task === 'T3') {
                 useSchematic = (trial.condition === 'B'); // T3 tests Schematic
+
+                // --- NEW: Force WebGL Transparency ON for Task 3 ---
+                app.PARAMS.transparent = true;
+                if (app.lineStrip) {
+                    app.lineStrip.material.transparent = true;
+                    app.lineStrip.material.setUniform("manualOpacity", true); 
+                }
+                if (app.lineStrip_high) {
+                    app.lineStrip_high.material.transparent = true;
+                    app.lineStrip_high.material.setUniform("manualOpacity", true); 
+                }
+                if (app.lineStrip_meduim) {
+                    app.lineStrip_meduim.material.transparent = true;
+                    app.lineStrip_meduim.material.setUniform("manualOpacity", true); 
+                }
+                if (app.lineStrip_low) {
+                    app.lineStrip_low.material.transparent = true;
+                    app.lineStrip_low.material.setUniform("manualOpacity", true); 
+                }
             }
 
             // 1. Toggle SSAO & Cylinder Shading (Diffuse/Specular)
@@ -288,6 +313,12 @@ class App {
                 if(app.lineStrip_meduim) app.lineStrip_meduim.highlightTracks(app.currentParentTrackId, app.currentSelectedTracks);
                 if(app.lineStrip_low) app.lineStrip_low.highlightTracks(app.currentParentTrackId, app.currentSelectedTracks);
             }
+
+            // --- NEW: SYNC VEGA 2D VIEW ---
+            if (window.vegaView && !app.isUpdatingVega) {
+                window.vegaView.signal('nodeHighlight', e.detail).runAsync().catch(err => console.warn(err));
+            }
+            // ------------------------------
         });
 
         window.addEventListener("resetCamera", () => {
@@ -2534,116 +2565,122 @@ class App {
               });
 
 
-            masksFolder.addBinding(this.PARAMS, 'energyLowInterval', {
-                min: -1.0,
-                max: this.max_E,
-                step: 0.001,
-                label: 'Low Filter'
-            }).on('change', (ev) => {
-                this.energy_cut_low_l = ev.value.min;
-                this.energy_cut_low_h = ev.value.max;
+              // --- NEW LOGARITHMIC SLIDER SETUP ---
+            // Create the mathematical bounds (log10(value + 1) to safely handle zeros)
+            const minLog = Math.log10(Math.max(0, this.min_E) + 1);
+            const maxLog = Math.log10(this.max_E + 1);
+            const formatEnergy = (v) => (Math.pow(10, v) - 1).toFixed(3); // Visual formatter
 
-                this.scene.remove(this.lineStrip);
-                this.scene.remove(this.lineStrip_low);
-                this.scene.remove(this.lineStrip_meduim);
-                this.scene.remove(this.lineStrip_high);
+            // Initialize the mapped parameters
+            this.PARAMS.logEnergyLowInterval = {
+                min: Math.log10(Math.max(0, this.energy_cut_low_l) + 1),
+                max: Math.log10(Math.max(0, this.energy_cut_low_h) + 1)
+            };
+            this.PARAMS.logEnergyMedInterval = {
+                min: Math.log10(Math.max(0, this.energy_cut_med_l) + 1),
+                max: Math.log10(Math.max(0, this.energy_cut_med_h) + 1)
+            };
+            this.PARAMS.logEnergyHighInterval = {
+                min: Math.log10(Math.max(0, this.energy_cut_high_l) + 1),
+                max: Math.log10(Math.max(0, this.energy_cut_high_h) + 1)
+            };
+            // ------------------------------------
 
-                if(this.PARAMS.bySubTree && this.PARAMS.byPDG)
-                    this.getSubTreeAtNode(this.PARAMS.subTree, true, this.PARAMS.pdg);
-                else if(this.PARAMS.bySubTree)
-                    this.getSubTreeAtNode(this.PARAMS.subTree);
-                else if(this.PARAMS.byPDG)
-                    this.getSubTreeAtNode(1, true, this.PARAMS.pdg);
-                else
-                    this.getSubTreeAtNode(1);
+            // 1. LOW FILTER
+            const lowBinding = masksFolder.addBinding(this.PARAMS, 'logEnergyLowInterval', {
+                min: minLog, max: maxLog, step: 0.001, label: 'Low Filter', format: formatEnergy
             });
+            lowBinding.on('change', (ev) => {
+                // Convert back to real energy for the 3D Engine
+                this.energy_cut_low_l = Math.pow(10, ev.value.min) - 1;
+                this.energy_cut_low_h = Math.pow(10, ev.value.max) - 1;
 
-            masksFolder.addBinding(this.PARAMS, 'energyMedInterval', {
-                min: -1.0,
-                max: this.max_E,
-                step: 0.001,
-                label: 'Medium Filter'
-            }).on('change', (ev) => {
-                this.energy_cut_med_l = ev.value.min;
-                this.energy_cut_med_h = ev.value.max;
-
-                this.scene.remove(this.lineStrip);
-                this.scene.remove(this.lineStrip_low);
-                this.scene.remove(this.lineStrip_meduim);
-                this.scene.remove(this.lineStrip_high);
-
-                if(this.PARAMS.bySubTree && this.PARAMS.byPDG)
-                    this.getSubTreeAtNode(this.PARAMS.subTree, true, this.PARAMS.pdg);
-                else if(this.PARAMS.bySubTree)
-                    this.getSubTreeAtNode(this.PARAMS.subTree);
-                else if(this.PARAMS.byPDG)
-                    this.getSubTreeAtNode(1, true, this.PARAMS.pdg);
-                else
-                    this.getSubTreeAtNode(1);
+                this.scene.remove(this.lineStrip); this.scene.remove(this.lineStrip_low);
+                this.scene.remove(this.lineStrip_meduim); this.scene.remove(this.lineStrip_high);
+                if(this.PARAMS.bySubTree && this.PARAMS.byPDG) this.getSubTreeAtNode(this.PARAMS.subTree, true, this.PARAMS.pdg);
+                else if(this.PARAMS.bySubTree) this.getSubTreeAtNode(this.PARAMS.subTree);
+                else if(this.PARAMS.byPDG) this.getSubTreeAtNode(1, true, this.PARAMS.pdg);
+                else this.getSubTreeAtNode(1);
             });
+            lowBinding.element.querySelector('.tp-lblv_l').style.color = '#007bff'; // BLUE
+            lowBinding.element.querySelector('.tp-lblv_l').style.fontWeight = 'bold';
 
-            masksFolder.addBinding(this.PARAMS, 'energyHighInterval', {
-                min: -1.0,
-                max: this.max_E,
-                step: 0.001,
-                label: 'High Filter'
-            }).on('change', (ev) => {
-                this.energy_cut_high_l = ev.value.min;
-                this.energy_cut_high_h = ev.value.max;
-
-                this.scene.remove(this.lineStrip);
-                this.scene.remove(this.lineStrip_low);
-                this.scene.remove(this.lineStrip_meduim);
-                this.scene.remove(this.lineStrip_high);
-
-                if(this.PARAMS.bySubTree && this.PARAMS.byPDG)
-                    this.getSubTreeAtNode(this.PARAMS.subTree, true, this.PARAMS.pdg);
-                else if(this.PARAMS.bySubTree)
-                    this.getSubTreeAtNode(this.PARAMS.subTree);
-                else if(this.PARAMS.byPDG)
-                    this.getSubTreeAtNode(1, true, this.PARAMS.pdg);
-                else
-                    this.getSubTreeAtNode(1);
+            // 2. MEDIUM FILTER
+            const medBinding = masksFolder.addBinding(this.PARAMS, 'logEnergyMedInterval', {
+                min: minLog, max: maxLog, step: 0.001, label: 'Medium Filter', format: formatEnergy
             });
+            medBinding.on('change', (ev) => {
+                // Convert back to real energy for the 3D Engine
+                this.energy_cut_med_l = Math.pow(10, ev.value.min) - 1;
+                this.energy_cut_med_h = Math.pow(10, ev.value.max) - 1;
 
-            masksFolder.addBinding(this.PARAMS, 'radius', {
-                min: 1.0,
-                max: 20,
-                step: 1,
-                label: 'Gaussian Kernel Radius'
-            }).on('change', (ev) => {
-                this.gb.addSBValue("RADIUS", ev.value + 1.0);
-                this.gb_2.addSBValue("RADIUS", ev.value + 1.0);
-
-                const [offset_gaussian, weight_gaussian] = gaussianKernel(ev.value, this.PARAMS.sigma);
-
-                console.log("Gaussian Test: ", ev.value, this.PARAMS.sigma);
-                console.log("Gaussian Test: ", offset_gaussian, weight_gaussian);
-
-                this.gb.setUniform("offset[0]", offset_gaussian);
-                this.gb.setUniform("weight[0]", weight_gaussian);
-
-                this.gb_2.setUniform("offset[0]", offset_gaussian);
-                this.gb_2.setUniform("weight[0]", weight_gaussian);
+                this.scene.remove(this.lineStrip); this.scene.remove(this.lineStrip_low);
+                this.scene.remove(this.lineStrip_meduim); this.scene.remove(this.lineStrip_high);
+                if(this.PARAMS.bySubTree && this.PARAMS.byPDG) this.getSubTreeAtNode(this.PARAMS.subTree, true, this.PARAMS.pdg);
+                else if(this.PARAMS.bySubTree) this.getSubTreeAtNode(this.PARAMS.subTree);
+                else if(this.PARAMS.byPDG) this.getSubTreeAtNode(1, true, this.PARAMS.pdg);
+                else this.getSubTreeAtNode(1);
             });
+            medBinding.element.querySelector('.tp-lblv_l').style.color = '#28a745'; // GREEN
+            medBinding.element.querySelector('.tp-lblv_l').style.fontWeight = 'bold';
 
-            masksFolder.addBinding(this.PARAMS, 'sigma', {
-                min: 0.0,
-                max: 20,
-                step: 0.1,
-                label: 'Gaussian Kernel Sigma'
-            }).on('change', (ev) => {
-                const [offset_gaussian, weight_gaussian] = gaussianKernel(this.PARAMS.radius, ev.value);
-
-                console.log("Gaussian Test: ", this.PARAMS.radius, ev.value);
-                console.log("Gaussian Test: ", offset_gaussian, weight_gaussian);
-
-                this.gb.setUniform("offset[0]", offset_gaussian);
-                this.gb.setUniform("weight[0]", weight_gaussian);
-
-                this.gb_2.setUniform("offset[0]", offset_gaussian);
-                this.gb_2.setUniform("weight[0]", weight_gaussian);
+            // 3. HIGH FILTER
+            const highBinding = masksFolder.addBinding(this.PARAMS, 'logEnergyHighInterval', {
+                min: minLog, max: maxLog, step: 0.001, label: 'High Filter', format: formatEnergy
             });
+            highBinding.on('change', (ev) => {
+                // Convert back to real energy for the 3D Engine
+                this.energy_cut_high_l = Math.pow(10, ev.value.min) - 1;
+                this.energy_cut_high_h = Math.pow(10, ev.value.max) - 1;
+
+                this.scene.remove(this.lineStrip); this.scene.remove(this.lineStrip_low);
+                this.scene.remove(this.lineStrip_meduim); this.scene.remove(this.lineStrip_high);
+                if(this.PARAMS.bySubTree && this.PARAMS.byPDG) this.getSubTreeAtNode(this.PARAMS.subTree, true, this.PARAMS.pdg);
+                else if(this.PARAMS.bySubTree) this.getSubTreeAtNode(this.PARAMS.subTree);
+                else if(this.PARAMS.byPDG) this.getSubTreeAtNode(1, true, this.PARAMS.pdg);
+                else this.getSubTreeAtNode(1);
+            });
+            highBinding.element.querySelector('.tp-lblv_l').style.color = '#dc3545'; // RED
+            highBinding.element.querySelector('.tp-lblv_l').style.fontWeight = 'bold';
+
+            // masksFolder.addBinding(this.PARAMS, 'radius', {
+            //     min: 1.0,
+            //     max: 20,
+            //     step: 1,
+            //     label: 'Gaussian Kernel Radius'
+            // }).on('change', (ev) => {
+            //     this.gb.addSBValue("RADIUS", ev.value + 1.0);
+            //     this.gb_2.addSBValue("RADIUS", ev.value + 1.0);
+
+            //     const [offset_gaussian, weight_gaussian] = gaussianKernel(ev.value, this.PARAMS.sigma);
+
+            //     console.log("Gaussian Test: ", ev.value, this.PARAMS.sigma);
+            //     console.log("Gaussian Test: ", offset_gaussian, weight_gaussian);
+
+            //     this.gb.setUniform("offset[0]", offset_gaussian);
+            //     this.gb.setUniform("weight[0]", weight_gaussian);
+
+            //     this.gb_2.setUniform("offset[0]", offset_gaussian);
+            //     this.gb_2.setUniform("weight[0]", weight_gaussian);
+            // });
+
+            // masksFolder.addBinding(this.PARAMS, 'sigma', {
+            //     min: 0.0,
+            //     max: 20,
+            //     step: 0.1,
+            //     label: 'Gaussian Kernel Sigma'
+            // }).on('change', (ev) => {
+            //     const [offset_gaussian, weight_gaussian] = gaussianKernel(this.PARAMS.radius, ev.value);
+
+            //     console.log("Gaussian Test: ", this.PARAMS.radius, ev.value);
+            //     console.log("Gaussian Test: ", offset_gaussian, weight_gaussian);
+
+            //     this.gb.setUniform("offset[0]", offset_gaussian);
+            //     this.gb.setUniform("weight[0]", weight_gaussian);
+
+            //     this.gb_2.setUniform("offset[0]", offset_gaussian);
+            //     this.gb_2.setUniform("weight[0]", weight_gaussian);
+            // });
 
         lightingFolder.addBinding(this.PARAMS, 'transparent',
             { label: 'transparent' })
@@ -3159,6 +3196,34 @@ class App {
         this.loadData(file);
     }
 
+    applySubtreeFilter(val) {
+        let targetNode = this.root.first(n => n.model.id === val);
+        if (!targetNode) return;
+        
+        // 1. Build the active set from the subtree
+        this.activeRenderedIds = new Set();
+        targetNode.walk(n => this.activeRenderedIds.add(n.model.id));
+        
+        // 2. Instantly update the GPU textures across all strips
+        let idsToHighlight = this.studyHighlightedIds || [];
+        if (this.lineStrip) this.lineStrip.updateStudyTexture(idsToHighlight);
+        if (this.lineStrip_high) this.lineStrip_high.updateStudyTexture(idsToHighlight);
+        if (this.lineStrip_meduim) this.lineStrip_meduim.updateStudyTexture(idsToHighlight);
+        if (this.lineStrip_low) this.lineStrip_low.updateStudyTexture(idsToHighlight);
+        
+        // 3. Snap camera to the root of the new subtree
+        // if (!this.cameraLocked && targetNode.model && targetNode.model.position_beg) {
+        //     const pos = targetNode.model.position_beg;
+        //     this.center = new RC.Vector3(this.scale * pos[0], this.scale * pos[1], this.scale * pos[2]);
+        //     this.camera.position.set(pos[0], pos[1], pos[2]);
+        //     this.camera.lookAt(this.center, new RC.Vector3(0, 1, 0));
+        //     if (this.cameraManager) {
+        //         this.cameraManager.addFullOrbitCamera(this.camera, this.center);
+        //         this.cameraManager.activeCamera = this.camera;
+        //     }
+        // }
+    }
+
     generateSamples(numberOfSamples) {
         const ssaoSamples = [];
 
@@ -3227,32 +3292,32 @@ class App {
             multiplier: 1
         };
 
-        this.camera.translateX(this.keyboard.keyboardTranslation.x * this.stopwatch.deltaTime * 0.001);
-        this.camera.translateY(this.keyboard.keyboardTranslation.y * this.stopwatch.deltaTime * 0.001);
-        this.camera.translateZ(this.keyboard.keyboardTranslation.z * this.stopwatch.deltaTime * 0.001);
+        // this.camera.translateX(this.keyboard.keyboardTranslation.x * this.stopwatch.deltaTime * 0.001);
+        // this.camera.translateY(this.keyboard.keyboardTranslation.y * this.stopwatch.deltaTime * 0.001);
+        // this.camera.translateZ(this.keyboard.keyboardTranslation.z * this.stopwatch.deltaTime * 0.001);
 
-        //console.log("cam pos", this.camera.position);
-        if (this.keyboard.keyboardRotation.x != 0 || this.keyboard.keyboardRotation.y != 0 || this.keyboard.keyboardRotation.z != 0) {
+        // //console.log("cam pos", this.camera.position);
+        // if (this.keyboard.keyboardRotation.x != 0 || this.keyboard.keyboardRotation.y != 0 || this.keyboard.keyboardRotation.z != 0) {
 
-            //let centerToCamera = this.center.clone().sub(this.camera.position);
+        //     //let centerToCamera = this.center.clone().sub(this.camera.position);
 
-            //this.camera.position.add(centerToCamera);
+        //     //this.camera.position.add(centerToCamera);
 
-            //this.camera.translateX(this.keyboard.keyboardRotation.x * this.stopwatch.deltaTime * 0.001);
-            //this.camera.translateY(this.keyboard.keyboardRotation.y * this.stopwatch.deltaTime * 0.001);
-            //this.camera.translateZ(this.keyboard.keyboardRotation.z * this.stopwatch.deltaTime * 0.001);
+        //     //this.camera.translateX(this.keyboard.keyboardRotation.x * this.stopwatch.deltaTime * 0.001);
+        //     //this.camera.translateY(this.keyboard.keyboardRotation.y * this.stopwatch.deltaTime * 0.001);
+        //     //this.camera.translateZ(this.keyboard.keyboardRotation.z * this.stopwatch.deltaTime * 0.001);
 
-            //this.camera.rotateX(this.keyboard.keyboardRotation.x * this.stopwatch.deltaTime * 0.001);
-            //this.camera.rotateY(this.keyboard.keyboardRotation.y * this.stopwatch.deltaTime * 0.001);
-            //this.camera.rotateZ(this.keyboard.keyboardRotation.z * this.stopwatch.deltaTime * 0.001);
+        //     //this.camera.rotateX(this.keyboard.keyboardRotation.x * this.stopwatch.deltaTime * 0.001);
+        //     //this.camera.rotateY(this.keyboard.keyboardRotation.y * this.stopwatch.deltaTime * 0.001);
+        //     //this.camera.rotateZ(this.keyboard.keyboardRotation.z * this.stopwatch.deltaTime * 0.001);
 
-            // this.camera.position.sub(centerToCamera);
+        //     // this.camera.position.sub(centerToCamera);
 
-            //this.camera.lookAt(this.center, new RC.Vector3(0, 1, 0));
+        //     //this.camera.lookAt(this.center, new RC.Vector3(0, 1, 0));
 
 
 
-        }
+        // }
 
 
         if (this.lineStrip) {
@@ -3478,102 +3543,6 @@ class App {
         this.renderer.updateViewport(this.canvas.width, this.canvas.height);
     }
 }
-
-// add a function to the dataflow to update pre with the hovered value
-export function getNodeId(evt, val) {
-    //d3.select("#pre-hovered").text(JSON.stringify(val));
-
-    // --- KEEP THIS: Stop the infinite echo loop if 3D triggered this! ---
-    if (window.app && window.app.isUpdatingVega) return;
-
-    if (val != 0) {
-
-
-        app.scene.remove(app.lineStrip);
-        app.scene.remove(app.lineStrip_low);
-        app.scene.remove(app.lineStrip_meduim);
-        app.scene.remove(app.lineStrip_high);
-
-        app.getSubTreeAtNode(val);
-
-
-        // --- NEW: SNAP CAMERA TO THE NEW SUBTREE ---
-        // Don't move the camera if it's locked for a specific study trial (like T1)
-        if (!app.cameraLocked) {
-            let targetNode = app.root.first(function (n) { return n.model.id === val; });
-            
-            if (targetNode && targetNode.model && targetNode.model.position_beg) {
-                const pos = targetNode.model.position_beg;
-
-                // 1. Calculate the scaled center of the newly selected track
-                app.center = new RC.Vector3(
-                    app.scale * pos[0],
-                    app.scale * pos[1],
-                    app.scale * pos[2]
-                );
-
-                // 2. Snap the camera physically (using the same offset logic as loadData)
-                app.camera.position.set(pos[0], pos[1], pos[2]);
-                app.camera.lookAt(app.center, new RC.Vector3(0, 1, 0));
-
-                // 3. Reset the RenderCore CameraManager so it pivots around the new track
-                if (app.cameraManager) {
-                    app.cameraManager.addFullOrbitCamera(app.camera, app.center);
-                    app.cameraManager.activeCamera = app.camera;
-                }
-            }
-        }
-        // -------------------------------------------
-
-        app.PARAMS.interval.min = app.min_T;
-        app.PARAMS.interval.max = app.max_T;
-
-        app.PARAMS.bySubTree = true;
-        app.PARAMS.subTree = val;
-
-        app.PARAMS.byLevel = false;
-
-        app.timeFolder.remove(app.intervalBiding);
-
-        app.intervalBiding = app.timeFolder.addBinding(app.PARAMS, 'interval', {
-            min: app.PARAMS.interval.min,
-            max: app.PARAMS.interval.max,
-            step: 0.001,
-            label: 'Time Interval'
-        }).on('change', (ev) => {
-            app.limitT_Min = ev.value.min;
-            app.limitT_Max = ev.value.max;
-        });
-
-        app.pane.refresh();
-
-        // --- CLEAN SLATE: 2D HIGHLIGHT ONLY ---
-        if (window.vegaView) {
-            (async function() {
-                try {
-                    app.isUpdatingVega = true;
-
-                    // 1. Force the node to highlight (SYNCED WITH MULTI-SELECT)
-                    let highlightPayload = [Number(val)];
-                    if (app.studyHighlightedIds && app.studyHighlightedIds.length > 0) {
-                        highlightPayload = app.studyHighlightedIds;
-                    }
-                    await window.vegaView.signal('nodeHighlight', highlightPayload).runAsync();
-
-                    app.isUpdatingVega = false;
-                } catch (e) {
-                    console.warn("Vega 2D Highlight failed:", e);
-                    app.isUpdatingVega = false;
-                }
-            })();
-        }
-        // ---------------------------------------------
-    }
-};
-
-
-
-
 
 export function updateRange(evt, val) {
     const rangeBeg = document.getElementsByName("xbegin");

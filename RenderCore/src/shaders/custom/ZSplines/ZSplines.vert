@@ -228,16 +228,18 @@ void main() {
             
         #fi
 
-        // --- NEW: THE ABSOLUTE HIGHLIGHT OVERRIDE ---
+        // --- UPDATED: THE ABSOLUTE HIGHLIGHT OVERRIDE ---
         // Grab the highlight data directly from instanceData1
         vec4 highlightData = texelFetch(material.instanceData1, ivec2(currentSegment%1350, currentSegment/1350), 0);
         
-        // If we detect the secret flag (-1.0), override everything!
+        // 1. SOLID OVERRIDE: If we detect a negative flag (-1.0, -0.5), force solid color
         if (highlightData.a < 0.0) {
             fragVColor = vec4(highlightData.rgb, 1.0);
         }
+        // 2. TRANSPARENT OVERRIDE: If we detect a fractional alpha (e.g. 0.15), force transparency
+        else if (highlightData.a > 0.0 && highlightData.a < 1.0) {
+            fragVColor = vec4(highlightData.rgb, highlightData.a);
+        }
+        // If a == 1.0 or 0.0, it safely ignores this block and renders normally.
         // --------------------------------------------
-
-
-
  }

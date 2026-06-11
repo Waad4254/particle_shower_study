@@ -46,12 +46,7 @@
       {
         "name": "nodeHighlight",
         "value": "[0]",
-        "on": [
-          {
-            "events": {"type": "mouseover", "markname": "node"},
-            "update": "pluck(treeAncestors('treeCalcs', datum.id), 'id')"
-          }
-        ]
+        "on": []
       },
       {
         "name": "isExpanded",
@@ -175,25 +170,20 @@
           }
         ]
       },
-      { "name": "xbegin", "value": 0, 
-      "bind": {"name": "x-axis scale beginning","input": "range", "min": -100, "max": 100, "step": 0.000001} },
-      { "name": "xend", "value": 14,
-      "bind": {"name": "x-axis scale end", "input": "range", "min": -100, "max": 100, "step": 0.000001} },
+      { "name": "zoomAxis", "value": "both" },
       {
         "name": "xdom",
         "update": "slice(xext)",
         "on": [
           {
             "events": {"signal": "delta"},
-            "update": "[xcur[0] + span(xcur) * delta[0] / scaleWidth, xcur[1] + span(xcur) * delta[0] / scaleWidth]"
+            "update": "[xcur[0] - span(xcur) * delta[0] / width, xcur[1] - span(xcur) * delta[0] / width]"
           },
           {
             "events": {"signal": "zoom"},
-            "update": "[anchor[0] + (xdom[0] - anchor[0]) * zoom, anchor[0] + (xdom[1] - anchor[0]) * zoom]"
+            "update": "zoomAxis === 'y' ? xdom : [anchor[0] + (xdom[0] - anchor[0]) * zoom, anchor[0] + (xdom[1] - anchor[0]) * zoom]"
           },
-          {"events": "dblclick", "update": "[10.8,11]"},
-          {"events":  {"signal": "xbegin"}, "update": "[xbegin,xdom[1]]"},
-          {"events":  {"signal": "xend"}, "update": "[xdom[0],xend]"}
+          {"events": "dblclick", "update": "[10.8,11]"}
         ]
       },
       {
@@ -206,7 +196,7 @@
           },
           {
             "events": {"signal": "zoom"},
-            "update": "[anchor[1] + (ydom[0] - anchor[1]) * zoom, anchor[1] + (ydom[1] - anchor[1]) * zoom]"
+            "update": "zoomAxis === 'x' ? ydom : [anchor[1] + (ydom[0] - anchor[1]) * zoom, anchor[1] + (ydom[1] - anchor[1]) * zoom]"
           },
           {"events": "dblclick", "update": "[0,height]"}
         ]

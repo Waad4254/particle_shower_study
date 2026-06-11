@@ -24,45 +24,6 @@
         overflow: hidden;
       }
 
-      #context-menu {
-        position: fixed;
-        z-index: 10000;
-        width: 150px;
-        background: #1b1a1a;
-        border-radius: 5px;
-        transform: scale(0);
-        transform-origin: top left;
-      }
-
-      #context-menu.visible {
-        transform: scale(1);
-        transition: transform 200ms ease-in-out;
-      }
-
-      #context-menu .item {
-        padding: 8px 10px;
-        font-size: 12px;
-        color: #ffffff;
-        cursor: pointer;
-        border-radius: inherit;
-      }
-
-      #context-menu .item:hover {
-        background: #343434;
-      }
-
-      textarea {
-        width: 20%;
-        height: 100px;
-        position: fixed;
-        padding: 12px 20px;
-        box-sizing: border-box;
-        border: 2px solid #ccc;
-        border-radius: 4px;
-        background-color: #f8f8f8;
-        font-size: 16px;
-      }
-
       input[type="range"] {
         width: 400px;
       }
@@ -106,52 +67,7 @@
         background-color: #ffffff;
       }
 
-      #widnow {
-        position: fixed;
-        width: 480px;
-        height: 450px;
-        display: none;
-      }
-
-      #title_bar {
-        background: #363636;
-        border: 3px solid #363636;
-        opacity: 0.8;
-        height: 25px;
-        width: 100%;
-        color: white;
-        text-align: center;
-        text-decoration: none;
-        font-size: 16px;
-      }
-
-      #button {
-        position: relative;
-        bottom: 0;
-        right: 0;
-        width: 25px;
-        height: 25px;
-        float: right;
-        cursor: pointer;
-        background-color: #363636;
-        color: white;
-        opacity: 1.0;
-        text-align: center;
-        text-decoration: none;
-        font-size: 16px;
-      }
-
       #button:hover { background-color: #445245 }
-
-      #vis {
-        position: fixed;
-        bottom: 1;
-        right: 1;
-        width: 480px;
-        height: 500px;
-        border: 3px solid #000000;
-        background-color: #ffffff;
-      }
 
       .vega-actions a {
         margin-right: 50px;
@@ -285,21 +201,191 @@
         color: white;
       }
 
+      /* Force Tweakpane UI to be wider */
+      .tp-dfwv { 
+        width: 600px !important; 
+      }
+
+      /* 1. THE MAGIC BULLET: Destroy the default flex-basis */
+      .tp-lblv_l {
+        width: 105px !important; 
+        min-width: 105px !important;
+        max-width: 105px !important;
+        flex-basis: 105px !important; /* <--- This forces Tweakpane to obey the width */
+        padding-right: 5px !important;
+        flex-shrink: 0 !important;
+      }
+
+      /* 2. Tell the value container to take up exactly the remaining space */
+      .tp-lblv_v {
+        width: calc(100% - 110px) !important;
+        flex-grow: 1 !important;
+        display: flex !important;
+        justify-content: flex-start !important;
+      }
+
+      /* 3. Force the interval plugin to stretch correctly */
+      .tp-lblv_v > div {
+        width: 100% !important;
+        justify-content: flex-start !important;
+      }
+      
+      .tp-lblv_v .tp-sldv {
+        flex-grow: 1 !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+      }
+
+      /* Navigation & Context Overlays */
+      .study-hud-box {
+        position: fixed;
+        background: rgba(0,0,0,0.85);
+        color: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 13px;
+        z-index: 10000;
+        display: none;
+        line-height: 1.6;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      }
+      #nav-info { bottom: 25px; right: 15px; width: 250px; pointer-events: none; }
+      #context-overlay { bottom: 25px; left: 15px; width: 320px; }
+
+      /* Make the context body scrollable to fit images and long text safely */
+      #context-body {
+        max-height: 50vh; /* Takes up a maximum of half the screen height */
+        overflow-y: auto;
+        padding-right: 8px;
+      }
+
+      /* Custom scrollbar to match the dark UI */
+      #context-body::-webkit-scrollbar { width: 6px; }
+      #context-body::-webkit-scrollbar-track { background: #222; border-radius: 4px; }
+      #context-body::-webkit-scrollbar-thumb { background: #6c757d; border-radius: 4px; }
+
+      /* --- UNIFIED 2D VIEW WINDOW --- */
+      #widnow {
+        position: fixed;
+        top: 15px; 
+        left: 15px;
+        width: 480px;
+        /* height: 500px; <-- REMOVED so it can cleanly shrink when collapsed */
+        display: flex;
+        flex-direction: column;
+        border: 2px solid #222;
+        border-radius: 6px;
+        overflow: hidden;
+        z-index: 9999;
+        background: #ffffff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5); /* Adds a nice floating drop-shadow */
+        display: none;
+      }
+
+      #title_bar {
+        background: #444; /* Restored original grey header color */
+        width: 100%;
+        color: white;
+        text-align: center;
+        font-weight: bold;
+        font-size: 14px;
+        padding: 6px 0;
+        flex-shrink: 0;
+        position: relative;
+      }
+
+      #button {
+        position: absolute;
+        top: 2px;
+        right: 10px;
+        cursor: pointer;
+        color: #ddd;
+        font-size: 20px;
+        font-weight: bold;
+        transition: color 0.2s;
+      }
+      #button:hover { color: #04AA6D; }
+
+      #vega-zoom-controls {
+        background: #222;
+        color: #fff;
+        padding: 8px 10px;
+        font-size: 12px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .vega-bindings {
+        order: -1; 
+        background: #222;
+        color: #fff;
+        padding: 4px 8px 12px 8px; /* Extra bottom padding for breathing room */
+        width: 100%; /* Force the dropdown box to fill the window */
+        box-sizing: border-box; /* Prevent it from spilling over the edges */
+        border-bottom: 2px solid #444; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      .vega-bindings select {
+        background: #333;
+        color: #fff;
+        border: 1px solid #555;
+        padding: 4px 8px;
+        border-radius: 4px;
+        outline: none;
+        cursor: pointer;
+      }
+
+      #vis {
+        position: relative; 
+        width: 100%;
+        min-height: 400px; /* Guarantees the graph has room to render */
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        background-color: #ffffff;
+        /* Removed align-items: center; to stop it from crushing the dropdown! */
+      }
+
+      /* This safely centers the graph canvas without affecting the dropdown */
+      #vis > canvas {
+        margin: 0 auto; 
+      }
     </style>
 
   </head>
   <body>
+    <div id="nav-info" class="study-hud-box"></div>
+    <details id="context-overlay" class="study-hud-box" open>
+      <summary style="font-weight: bold; color: #00FFFF; cursor: pointer; outline: none; margin-bottom: 5px;">
+        Physics Context: <span id="context-title-span"></span>
+      </summary>
+      <div id="context-body"></div>
+    </details>
+
     <aside>
       <div id="widnow">
         <div id="title_bar">
           2D View
           <div id="button">-</div>
         </div>
-        <div id="vis"></div>
-      </div>
 
-      <div id="context-menu">
-        <div id="annotate" class="item">Add Annotation</div>
+        <div id="widnow-body" style="display: flex; flex-direction: column; flex-grow: 1;">
+            
+            <div id="vega-zoom-controls">
+              <label style="margin-right: 10px; font-weight: normal;"><input type="radio" name="vzoom" value="both" checked> Both Axes</label>
+              <label style="margin-right: 10px; font-weight: normal;"><input type="radio" name="vzoom" value="x"> X-Axis Only</label>
+              <label style="font-weight: normal;"><input type="radio" name="vzoom" value="y"> Y-Axis Only</label>
+            </div>
+
+            <div id="vis"></div>
+
+        </div>
       </div>
 
       <script type="module" src="./vega.js"></script>
@@ -310,9 +396,11 @@
           } else {
             $(this).html("-");
           }
-          $("#vis").slideToggle();
+          // Change this target to the new wrapper
+          $("#widnow-body").slideToggle();
         });
       </script>
+
     </aside>
 
     <div id="study-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; overflow-y: auto; display: none; pointer-events: none;">
@@ -349,6 +437,19 @@
 
       <div id="block-tutorial" class="study-block" style="display: none;">
         <h2>Tutorial & Instructions</h2>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+          <img src="./teaser.png" style="width: 100%; border-radius: 6px; border: none;" alt="HGCal Particle Shower">
+          <p style="font-size: 12px; color: #777; margin-top: 5px;">Comparison of standard rendering (left) vs. Importance-Ordered Rendering (right).</p>
+      </div>
+      
+      <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #04AA6D; border-radius: 4px; margin-bottom: 25px; color: #333;">
+          <p style="margin-top: 0; font-weight: bold; font-size: 15px;">Physics Context: Particle Showers</p>
+          <p style="margin-bottom: 0; font-size: 14px; line-height: 1.5;">
+              When a primary particle enters a detector like CERN's HGCal, it interacts with the material and produces a cascading tree of secondary particles—a <b>shower</b>. These simulated events are incredibly dense, packing thousands of trajectories into a small volume. The most physically significant tracks (the high-energy core) make up only a small fraction of the shower and are easily hidden behind a dense forest of low-energy particles.
+          </p>
+      </div>
+
         <p>In this study, you will complete three types of tasks (T1, T2, T3) using 3D simulated particle showers. Please follow these interaction rules:</p>
         
         <ul style="text-align: left; line-height: 1.6; margin-bottom: 25px;">
@@ -356,7 +457,7 @@
             <li><b>Task 1 (Comparisons):</b> You must identify specific tracks. The camera is <b>locked</b> to a fixed viewpoint.</li>
             <li><b>Task 2 (Energy Tasks):</b> Click a 3D track to select it and inspect its energy properties.</li>
             <li><b>Task 3 (Parent/Daughter):</b> Click multiple tracks to build a selection. The "parent" track will be highlighted in <b>RED</b> for your reference.</li>
-            <li><b>2D Schematic View:</b> When the 2D window is visible, clicking a 3D track will highlight its corresponding node in the 2D view. Conversely, clicking a node in the 2D view will instantly filter the 3D shower to show only that specific subtree.</li>
+            <li><b>2D Schematic View:</b> <b>Left Click</b> a node to highlight its track in 3D. <b>Right Click</b> a node to fade out the rest of the shower and isolate that specific subtree.</li>
             <li><b>Interaction Note:</b> Some tools (like the UI sliders or the 2D view) will be automatically <b>hidden or disabled</b> during specific trials to ensure data integrity. If you are ever unsure of an answer, please use the <b>"I don't know"</b> button to avoid random guessing.</li>
         </ul>
 
@@ -424,8 +525,10 @@
         <div class="progress-node" id="node-1">T1.2</div>
         <div class="progress-node" id="node-2">T2.1</div>
         <div class="progress-node" id="node-3">T2.2</div>
-        <div class="progress-node" id="node-4">T3.1</div>
-        <div class="progress-node" id="node-5">T3.2</div>
+        <div class="progress-node" id="node-4">T2.3</div>
+        <div class="progress-node" id="node-5">T3.1</div>
+        <div class="progress-node" id="node-6">T3.2</div>
+
       </div>
       <h3 id="task-prompt-text" style="margin-top: 0;">Task Prompt Here</h3>
       <div id="task-controls"></div>

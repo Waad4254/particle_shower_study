@@ -124,8 +124,8 @@
           }
         ]
       },
-      {"name": "xext", "update": "[0,scaleWidth]"},
-      {"name": "yext", "update": "[0,height]"},
+      {"name": "xext", "update": "[0.5, 4.0]"},
+      {"name": "yext", "update": "[-1300, 1500]"},
       {
         "name": "zoom",
         "value": 1,
@@ -183,7 +183,7 @@
             "events": {"signal": "zoom"},
             "update": "zoomAxis === 'y' ? xdom : [anchor[0] + (xdom[0] - anchor[0]) * zoom, anchor[0] + (xdom[1] - anchor[0]) * zoom]"
           },
-          {"events": "dblclick", "update": "[10.8,11]"}
+          {"events": "dblclick", "update": "slice(xext)"}
         ]
       },
       {
@@ -198,7 +198,7 @@
             "events": {"signal": "zoom"},
             "update": "zoomAxis === 'x' ? ydom : [anchor[1] + (ydom[0] - anchor[1]) * zoom, anchor[1] + (ydom[1] - anchor[1]) * zoom]"
           },
-          {"events": "dblclick", "update": "[0,height]"}
+          {"events": "dblclick", "update": "slice(yext)"}
         ]
       },
       {"name": "scaledNodeWidth", "update": "(nodeWidth/ span(xdom))*scaleWidth"},

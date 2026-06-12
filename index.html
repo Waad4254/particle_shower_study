@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>WebGL ZSplines Demo</title>
     <title>WebGL ZSplines Demo</title>
     <link rel="stylesheet" type="text/css" href="./common/css/style.css">
     <link rel="stylesheet" type="text/css" href="study.css">
@@ -114,7 +115,7 @@
 
       #taskOverlay p {
         margin: 0 0 15px 0;
-        font-size: 16px;
+        font-size: 18px;
         font-weight: bold;
       }
 
@@ -127,8 +128,8 @@
       }
 
       #taskOverlay button {
-        padding: 10px 20px;
-        font-size: 14px;
+        padding: 12px 24px;
+        font-size: 15px;
         cursor: pointer;
         background-color: #04AA6D;
         color: white;
@@ -241,16 +242,16 @@
         position: fixed;
         background: rgba(0,0,0,0.85);
         color: #fff;
-        padding: 15px;
+        padding: 18px;
         border-radius: 8px;
-        font-size: 13px;
+        font-size: 15px;
         z-index: 10000;
         display: none;
         line-height: 1.6;
         box-shadow: 0 4px 6px rgba(0,0,0,0.3);
       }
-      #nav-info { bottom: 25px; right: 15px; width: 250px; pointer-events: none; }
-      #context-overlay { bottom: 25px; left: 15px; width: 320px; }
+      #nav-info { bottom: 25px; right: 15px; width: 280px; pointer-events: none; }
+      #context-overlay { bottom: 25px; left: 15px; width: 360px; }
 
       /* Make the context body scrollable to fit images and long text safely */
       #context-body {
@@ -378,6 +379,7 @@
         <div id="widnow-body" style="display: flex; flex-direction: column; flex-grow: 1;">
             
             <div id="vega-zoom-controls">
+              <span style="margin-right: 15px; font-weight: bold;">Zoom:</span>
               <label style="margin-right: 10px; font-weight: normal;"><input type="radio" name="vzoom" value="both" checked> Both Axes</label>
               <label style="margin-right: 10px; font-weight: normal;"><input type="radio" name="vzoom" value="x"> X-Axis Only</label>
               <label style="font-weight: normal;"><input type="radio" name="vzoom" value="y"> Y-Axis Only</label>
@@ -436,11 +438,12 @@
       </div>
 
       <div id="block-tutorial" class="study-block" style="display: none;">
-        <h2>Tutorial & Instructions</h2>
+        <h2>3D Rendering of Simulated Particle Showers in CERN’s HGCal Detector</h2>
+        <h2>A User Study</h2>
 
         <div style="text-align: center; margin-bottom: 20px;">
-          <img src="./showers.png" style="width: 100%; border-radius: 6px; border: none;" alt="HGCal Particle Shower">
-          <p style="font-size: 12px; color: #777; margin-top: 5px;">Comparison of Electromagnetic Showers (left) vs. Hadronic Showers (right).</p>
+          <img src="./teaser.png" style="width: 100%; border-radius: 6px; border: none;" alt="HGCal Particle Shower">
+          <p style="font-size: 12px; color: #777; margin-top: 5px;">Comparison of standard rendering (left) vs. Importance-Ordered Rendering (right).</p>
       </div>
       
       <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #04AA6D; border-radius: 4px; margin-bottom: 25px; color: #333;">
@@ -448,6 +451,11 @@
           <p style="margin-bottom: 0; font-size: 14px; line-height: 1.5;">
               When a primary particle enters a detector like CERN's HGCal, it interacts with the material and produces a cascading tree of secondary particles—a <b>shower</b>. These simulated events are incredibly dense, packing thousands of trajectories into a small volume. The most physically significant tracks (the high-energy core) make up only a small fraction of the shower and are easily hidden behind a dense forest of low-energy particles.
           </p>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 20px;">
+        <img src="./showers.png" style="width: 100%; border-radius: 6px; border: none;" alt="HGCal Particle Shower">
+        <p style="font-size: 12px; color: #777; margin-top: 5px;">Comparison of Electromagnetic Showers (left) vs. Hadronic Showers (right).</p>
       </div>
 
       <div style="background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 4px; margin-bottom: 25px; color: #856404;">
@@ -459,8 +467,6 @@
 
     <p>In this study, you will complete three types of tasks (T1, T2, T3) using 3D simulated particle showers. Please follow these interaction rules:</p>
 
-        <p>In this study, you will complete three types of tasks (T1, T2, T3) using 3D simulated particle showers. Please follow these interaction rules:</p>
-        
         <ul style="text-align: left; line-height: 1.6; margin-bottom: 25px;">
             <li><b>Navigation:</b> Use your mouse to rotate, pan, and zoom the 3D model (except in Task 1).</li>
             <li><b>Task 1 (Comparisons):</b> You must identify specific tracks. The camera is <b>locked</b> to a fixed viewpoint.</li>

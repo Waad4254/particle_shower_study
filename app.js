@@ -300,7 +300,18 @@ class App {
 
             if (window.hgcalStudy) {
                 // --- STUDY MODE: Use the Gray Base + Cyan Highlights ---
-                const selectedIds = e.detail;
+                // const selectedIds = e.detail;
+
+                let selectedIds = [...e.detail]; // Clone the array safely
+                
+                // --- NEW: Hide the parent track from the 3D shader! ---
+                if (app.currentTrialState && app.currentTrialState.parentTrack) {
+                    const parentId = app.currentTrialState.parentTrack;
+                    // Force both to be Numbers so the filter catches it perfectly
+                    selectedIds = selectedIds.filter(id => Number(id) !== Number(parentId));
+                }
+
+                
                 if (app.lineStrip) app.lineStrip.updateStudyTexture(selectedIds);
                 if (app.lineStrip_high) app.lineStrip_high.updateStudyTexture(selectedIds);
                 if (app.lineStrip_meduim) app.lineStrip_meduim.updateStudyTexture(selectedIds);

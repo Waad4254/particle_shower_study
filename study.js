@@ -244,84 +244,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 3. WAIT for app.js to finish the Python pipeline and render the 3D scene!
+    // window.addEventListener("datasetReady", () => {
+    //     // --- NEW: Ignore the signal if we didn't ask for a dataset! ---
+    //     if (!isWaitingForDataset) return; 
+    //     isWaitingForDataset = false; 
+    //     // ---------------------------------------------------------------
+
+    //     const trial = trialSequence[currentTrialIndex];
+        
+    //     window.dispatchEvent(new CustomEvent("clearHighlights"));
+    //     window.dispatchEvent(new CustomEvent("resetCamera"));
+
+    //     if (currentTrialIndex === 0) {
+    //         showBlock('block-countdown');
+    //         const btn = document.getElementById('btn-begin-trial');
+    //         btn.innerText = "Start Trial";
+    //         btn.disabled = false;
+    //         const newBtn = btn.cloneNode(true);
+    //         btn.parentNode.replaceChild(newBtn, btn);
+
+    //         newBtn.addEventListener('click', function() {
+    //             let count = 3;
+    //             newBtn.disabled = true;
+    //             newBtn.innerText = `Get ready... ${count}`;
+    //             let countdownInterval = setInterval(() => {
+    //                 count--;
+    //                 if (count > 0) {
+    //                     newBtn.innerText = `Get ready... ${count}`;
+    //                 } else {
+    //                     clearInterval(countdownInterval);
+    //                     activateTrialInteractions(trial); 
+    //                 }
+    //             }, 1000);
+    //         });
+    //     } else {
+    //         // For trials 2 through 6, skip the countdown entirely!
+    //         activateTrialInteractions(trial);
+    //     }
+    // });
+
+    // 3. WAIT for app.js to finish the Python pipeline and render the 3D scene!
     window.addEventListener("datasetReady", () => {
-        // --- NEW: Ignore the signal if we didn't ask for a dataset! ---
         if (!isWaitingForDataset) return; 
         isWaitingForDataset = false; 
-        // ---------------------------------------------------------------
 
         const trial = trialSequence[currentTrialIndex];
         
         window.dispatchEvent(new CustomEvent("clearHighlights"));
         window.dispatchEvent(new CustomEvent("resetCamera"));
 
-        if (currentTrialIndex === 0) {
-            showBlock('block-countdown');
-            const btn = document.getElementById('btn-begin-trial');
-            btn.innerText = "Start Trial";
-            btn.disabled = false;
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
-
-            newBtn.addEventListener('click', function() {
-                let count = 3;
-                newBtn.disabled = true;
-                newBtn.innerText = `Get ready... ${count}`;
-                let countdownInterval = setInterval(() => {
-                    count--;
-                    if (count > 0) {
-                        newBtn.innerText = `Get ready... ${count}`;
-                    } else {
-                        clearInterval(countdownInterval);
-                        activateTrialInteractions(trial); 
-                    }
-                }, 1000);
-            });
-        } else {
-            // For trials 2 through 6, skip the countdown entirely!
-            activateTrialInteractions(trial);
-        }
-    });
-
-    function activateTrialInteractions(trial) {
-        // Drop the white overlay to reveal the 3D scene!
-        showBlock('trials');
-
-        // Start the Timers EXACTLY when the tracks become visible
-        trialStartTime = performance.now();
-        trialStartISO = new Date().toISOString();
-
+        // Pre-apply the scene conditions so the background is ready to look at
         window.dispatchEvent(new CustomEvent("applyTrialColors", { detail: trial }));
-
-        // --- NEW: Apply the A/B graphical conditions ---
         window.dispatchEvent(new CustomEvent("applyTrialConditions", { detail: trial }));
-        // -----------------------------------------------
 
-        // --- NEW: UPDATE STEPPER PROGRESS BAR ---
-        // Calculate the line width (0% at first trial, 100% at last trial)
-        const progressPct = (currentTrialIndex / (trialSequence.length - 1)) * 100;
-        const progressLine = document.getElementById('trial-progress-line');
-        if (progressLine) progressLine.style.width = `${progressPct}%`;
+        // Drop the loading overlay to reveal the prepared 3D scene
+        showBlock('trials'); 
 
-        // Light up the bubbles!
-        for (let i = 0; i < trialSequence.length; i++) {
-            const node = document.getElementById(`node-${i}`);
-            if (node) {
-                if (i === currentTrialIndex) {
-                    node.className = 'progress-node active'; // Current trial glows
-                } else if (i < currentTrialIndex) {
-                    node.className = 'progress-node completed'; // Past trials are solid green
-                } else {
-                    node.className = 'progress-node'; // Future trials stay grey
-                }
-            }
-        }
-        // ----------------------------------------
-
-        // Set the text
-        document.getElementById('task-prompt-text').innerText = trial.desc;
-
-        // --- CONTEXT & NAVIGATION OVERLAYS ---
+        // --- NEW: POPULATE & SHOW HUD OVERLAYS BEFORE THE COUNTDOWN ---
         const navInfo = document.getElementById('nav-info');
         const contextInfo = document.getElementById('context-overlay');
         const contextTitle = document.getElementById('context-title-span');
@@ -332,12 +311,11 @@ document.addEventListener('DOMContentLoaded', () => {
             navInfo.innerHTML = `<b style="color:#04AA6D;">Navigation:</b><br>Fixed Camera (Locked)<br><br><b style="color:#04AA6D;">Selection:</b><br>Use the buttons below to record your answer.`;
             contextInfo.style.display = 'none';
         } else if (trial.task === 'T2') {
-            navInfo.innerHTML = `<b style="color:#04AA6D;">Navigation:</b><br>• <b>Rotate:</b> Left Click + Drag<br>• <b>Pan:</b> Right Click + Drag<br>• <b>Zoom:</b> Scroll Wheel<br><br><b style="color:#04AA6D;">Selection:</b><br>• <b>Left Click</b> to highlight a track.`;
+            navInfo.innerHTML = `<b style="color:#04AA6D;">3D Navigation:</b><br>• <b>Left Click:</b> Orbit <br>• <b>Middle Click:</b> Pan <br>• <b>Right Click:</b> Heading <br>• <b>Wheel:</b> Zoom<br><br><b style="color:#04AA6D;">Selection:</b><br>• <b>Left Click</b> to highlight a track.`;
             
             contextInfo.style.display = 'block';
             contextInfo.open = true; // Auto-expand when a new trial loads
             
-            // --- NEW: Split context based on IOR active (Condition B) ---
             if (trial.condition === 'B') {
                 contextTitle.innerText = "IOR Filtering";
                 contextBody.innerHTML = `<b>Importance-Ordered Rendering (IOR)</b> is a specialized visualization tool. It categorizes tracks by energy (High = <span style="color:#dc3545; font-weight:bold;">Red</span>, Medium = <span style="color:#28a745; font-weight:bold;">Green</span>, Low = <span style="color:#007bff; font-weight:bold;">Blue</span>) and mathematically forces the critical, high-energy paths to render <i>on top</i> of the dense particle cloud so they are never hidden. You can use the UI sliders to adjust these energy brackets!`;
@@ -345,16 +323,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 contextTitle.innerText = "Energy";
                 contextBody.innerHTML = `In a particle shower, primary particles have high energy. As they collide and branch out, energy is distributed among daughters. Tracking highest-energy paths helps reconstruct the core collision trajectory.`;
             }
-            // ------------------------------------------------------------
-        
         } else if (trial.task === 'T3') {
-            navInfo.innerHTML = `<b style="color:#04AA6D;">3D Navigation:</b><br>• <b>Rotate:</b> Left Click + Drag<br>• <b>Pan:</b> Right Click + Drag<br>• <b>Zoom:</b> Scroll Wheel<br><br><b style="color:#04AA6D;">2D Schematic View:</b><br>• <b>Highlight:</b> Left Click a node.<br>• <b>Filter Subtree:</b> Right Click a node.`;
+            navInfo.innerHTML = `<b style="color:#04AA6D;">3D Navigation:</b><br>• <b>Left Click:</b> Orbit <br>• <b>Middle Click:</b> Pan <br>• <b>Right Click:</b> Heading <br>• <b>Wheel:</b> Zoom<br><br><b style="color:#04AA6D;">2D Schematic View:</b><br>• <b>Highlight:</b> Left Click a node.<br>• <b>Filter Subtree:</b> Right Click a node.`;
 
             contextInfo.style.display = 'block';
             contextInfo.open = true; // Auto-expand when a new trial loads
             contextTitle.innerText = "Showers & Daughters";
             
-            // Injecting the diagram and the explanation
             contextBody.innerHTML = `
                 <div style="text-align: center;">
                     <img src="./showers.png" style="width: 100%; border-radius: 6px; margin: 8px 0; border: 1px solid #444;" alt="Particle Shower Diagram">
@@ -369,30 +344,77 @@ document.addEventListener('DOMContentLoaded', () => {
                     <b style="color:#ffc107;">Finding Daughters:</b> When a particle decays or collides, the newly created particles are its "daughters." In this task, look for the tracks that branch <i>directly</i> out of the end of the highlighted parent track!
                 </p>`;
         }
-        // -------------------------------------
+        // --------------------------------------------------------------
+
+        // Update Stepper Progress Bar
+        const progressPct = (currentTrialIndex / (trialSequence.length - 1)) * 100;
+        const progressLine = document.getElementById('trial-progress-line');
+        if (progressLine) progressLine.style.width = `${progressPct}%`;
+
+        for (let i = 0; i < trialSequence.length; i++) {
+            const node = document.getElementById(`node-${i}`);
+            if (node) {
+                if (i === currentTrialIndex) node.className = 'progress-node active';
+                else if (i < currentTrialIndex) node.className = 'progress-node completed';
+                else node.className = 'progress-node';
+            }
+        }
+
+        // Setup the in-panel Start Button
+        document.getElementById('task-prompt-text').innerText = `Task Ready`;
+        document.getElementById('task-controls').innerHTML = `
+            <button id="btn-in-panel-start" class="study-btn" style="margin: 10px auto !important; height: 48px; width: 200px;">Start Task</button>
+        `;
+
+        document.getElementById('btn-in-panel-start').addEventListener('click', function() {
+            const btn = this;
+            let count = 3;
+            btn.disabled = true;
+            btn.style.background = '#6c757d'; // Grey out while counting
+            btn.innerText = `Starting in... ${count}`;
+            
+            let countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    btn.innerText = `Starting in... ${count}`;
+                } else {
+                    clearInterval(countdownInterval);
+                    activateTrialInteractions(trial); 
+                }
+            }, 1000);
+        });
+    });
+
+    function activateTrialInteractions(trial) {
+        // Start the Timers EXACTLY when the question appears
+        trialStartTime = performance.now();
+        trialStartISO = new Date().toISOString();
+
+        // Set the actual task question text
+        document.getElementById('task-prompt-text').innerText = trial.desc;
 
         // Inject the actual task controls using robust Flexbox
         const controlsDiv = document.getElementById('task-controls');
         if (trial.task === 'T1') {
             controlsDiv.innerHTML = `
                 <div style="display: flex; justify-content: center; gap: 8px; margin-top: 15px;">
-                    <button onclick="window.hgcalStudy.submitAnswer('RED')" style="width: 100px; height: 48px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">RED</button>
-                    <button onclick="window.hgcalStudy.submitAnswer('BLUE')" style="width: 100px; height: 48px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">BLUE</button>
-                    <button onclick="window.hgcalStudy.submitAnswer('IDK')" style="width: 100px; height: 48px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px;">IDK</button>
+                    <button onclick="window.hgcalStudy.submitAnswer('RED')" style="width: 100px; height: 48px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;">RED</button>
+                    <button onclick="window.hgcalStudy.submitAnswer('BLUE')" style="width: 100px; height: 48px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;">BLUE</button>
+                    <button onclick="window.hgcalStudy.submitAnswer('IDK')" style="width: 100px; height: 48px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;">IDK</button>
                 </div>`;
         } else if (trial.task === 'T2') {
             controlsDiv.innerHTML = `
                 <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
-                    <button id="t2-confirm-btn" onclick="window.hgcalStudy.submitAnswer('SUBMIT')" disabled style="width: 140px; height: 48px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: bold; font-size: 14px;">Confirm</button>
-                    <button onclick="window.hgcalStudy.submitAnswer('IDK')" style="width: 140px; height: 48px; background: #343a40; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">IDK</button>
+                    <button id="t2-confirm-btn" onclick="window.hgcalStudy.submitAnswer('SUBMIT')" disabled style="width: 140px; height: 48px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: bold; font-size: 15px;">Confirm</button>
+                    <button onclick="window.hgcalStudy.submitAnswer('IDK')" style="width: 140px; height: 48px; background: #343a40; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;">IDK</button>
                 </div>`;
         } else if (trial.task === 'T3') {
             controlsDiv.innerHTML = `
                 <div style="text-align: center;">
-                    <p style="margin: 5px 0 10px 0; font-size: 14px; color: #ccc;">Tracks selected: <span id="t3-count" style="font-weight:bold; color:white;">0</span></p>
+                    <p style="margin: 5px 0 10px 0; font-size: 15px; color: #ccc;">Tracks selected: <span id="t3-count" style="font-weight:bold; color:white;">0</span></p>
                     <div style="display: flex; justify-content: center; gap: 10px;">
-                        <button onclick="window.hgcalStudy.submitAnswer('SUBMIT')" style="width: 140px; height: 48px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">Confirm</button>
-                        <button onclick="window.hgcalStudy.submitAnswer('IDK')" style="width: 140px; height: 48px; background: #343a40; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">IDK</button>
+                        <button onclick="window.hgcalStudy.submitAnswer('SUBMIT')" style="width: 140px; height: 48px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;">Confirm</button>
+                        <button onclick="window.hgcalStudy.submitAnswer('IDK')" style="width: 140px; height: 48px; background: #343a40; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px;">IDK</button>
                     </div>
                 </div>`;
         }

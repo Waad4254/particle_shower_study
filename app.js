@@ -871,18 +871,20 @@ class App {
             ]
         );
 
-        this.gb = new RC.CustomShaderMaterial("gaussBlur", {horizontal: true, power: 1.0}); 
-        this.gb_2 = new RC.CustomShaderMaterial("gaussBlur", {horizontal: false, power: 1.0}); 
+        if (!this.gb) {
+            this.gb = new RC.CustomShaderMaterial("gaussBlur", {horizontal: true, power: 1.0}); 
+            this.gb_2 = new RC.CustomShaderMaterial("gaussBlur", {horizontal: false, power: 1.0}); 
 
-        this.gb.addSBValue("RADIUS", 4);
-        this.gb_2.addSBValue("RADIUS", 4);
+            this.gb.addSBValue("RADIUS", 4);
+            this.gb_2.addSBValue("RADIUS", 4);
 
-        const [offset_gaussian, weight_gaussian] = gaussianKernel(3, 1);
-        this.gb.setUniform("offset[0]", offset_gaussian);
-        this.gb.setUniform("weight[0]", weight_gaussian);
+            const [offset_gaussian, weight_gaussian] = gaussianKernel(3, 1);
+            this.gb.setUniform("offset[0]", offset_gaussian);
+            this.gb.setUniform("weight[0]", weight_gaussian);
 
-        this.gb_2.setUniform("offset[0]", offset_gaussian);
-        this.gb_2.setUniform("weight[0]", weight_gaussian);
+            this.gb_2.setUniform("offset[0]", offset_gaussian);
+            this.gb_2.setUniform("weight[0]", weight_gaussian);
+        }
 
 
         this.RenderPass_GaussBlur_imp_0 = new RC.RenderPass(
@@ -1329,22 +1331,28 @@ class App {
         );
 
 
-        this.ssaoMaterial = new RC.CustomShaderMaterial("SSAO",
-            {
-                radius: 0.6,
-                bias: 0.005,
-                magnitude: 1.0,
-                contrast: 1.2,
-                "samples[0]": this.generateSamples(8),
-                "noise[0]": this.generateNoise(4),
-                PMat_o: this.camera.projectionMatrix.elements
-            });
+        if (!this.ssaoMaterial) {
+            this.ssaoMaterial = new RC.CustomShaderMaterial("SSAO",
+                {
+                    radius: 0.6,
+                    bias: 0.005,
+                    magnitude: 1.0,
+                    contrast: 1.2,
+                    "samples[0]": this.generateSamples(8),
+                    "noise[0]": this.generateNoise(4),
+                    PMat_o: this.camera.projectionMatrix.elements
+                });
 
             this.ssaoMaterial.addSBValue("NUM_SAMPLES", 8);
             this.ssaoMaterial.addSBValue("NUM_NOISE", 4);
 
             this.ssaoMaterial.lights = false;
             this.ssaoMaterial.depthTest = true;
+        } else {
+            // Update the projection matrix mathematically if resizing
+            this.ssaoMaterial.setUniform("PMat_o", this.camera.projectionMatrix.elements);
+        }
+
         this.RenderPass_SSAO = new RC.RenderPass(
             // Rendering pass type
             RC.RenderPass.POSTPROCESS,
@@ -1421,9 +1429,11 @@ class App {
         );
 
      
-        this.outlineMaterial = new RC.CustomShaderMaterial("outline", { scale: 1.0, edgeColor: [0.7, 0.1, 0.5, 1.0], _DepthThreshold: 6.0, _NormalThreshold: 0.4, _DepthNormalThreshold: 0.5, _DepthNormalThresholdScale: 7.0 });
-        this.outlineMaterial.lights = false;
-        this.outlineMaterial.setUniform("outline", this.outline);
+        if (!this.outlineMaterial) {
+            this.outlineMaterial = new RC.CustomShaderMaterial("outline", { scale: 1.0, edgeColor: [0.7, 0.1, 0.5, 1.0], _DepthThreshold: 6.0, _NormalThreshold: 0.4, _DepthNormalThreshold: 0.5, _DepthNormalThresholdScale: 7.0 });
+            this.outlineMaterial.lights = false;
+            this.outlineMaterial.setUniform("outline", this.outline);
+        }
 
         const RenderPass_Outline = new RC.RenderPass(
             // Rendering pass type
@@ -1492,12 +1502,14 @@ class App {
         );
 
 
-        this.lightingMaterial = new RC.CustomShaderMaterial("ZSplinesLighting");
-        this.lightingMaterial.lights = false;
-        this.lightingMaterial.setUniform("light_ambient", true);
-        this.lightingMaterial.setUniform("light_diffuse", true);
-        this.lightingMaterial.setUniform("light_specular", true);
-        this.lightingMaterial.setUniform("ambientOcc", true);
+        if (!this.lightingMaterial) {
+            this.lightingMaterial = new RC.CustomShaderMaterial("ZSplinesLighting");
+            this.lightingMaterial.lights = false;
+            this.lightingMaterial.setUniform("light_ambient", true);
+            this.lightingMaterial.setUniform("light_diffuse", true);
+            this.lightingMaterial.setUniform("light_specular", true);
+            this.lightingMaterial.setUniform("ambientOcc", true);
+        }
 
 
 
@@ -1539,7 +1551,9 @@ class App {
         );
 
      
-        this.finalColorTex =  "showerColor";
+        if (!this.finalColorTex) {
+            this.finalColorTex = "showerColor";
+        }
 
         const blendingMaterial2 = new RC.CustomShaderMaterial("blendingAdditive");
         blendingMaterial2.lights = false;
@@ -3545,13 +3559,38 @@ class App {
     }
 
     resize() {
-        // Make the canvas the same size
-        this.canvas.width = window.innerWidth * window.devicePixelRatio;
-        this.canvas.height = window.innerHeight * window.devicePixelRatio;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const dpr = window.devicePixelRatio || 1;
 
-        // Update camera aspect ratio and renderer viewport
-        this.camera.aspect = this.canvas.width / this.canvas.height;
+        // 1. Update the internal RenderCore buffers
+        this.canvas.width = w * dpr;
+        this.canvas.height = h * dpr;
+
+        // 2. Force the physical HTML element to resize
+        if (this.canvas.canvasDOM) {
+            this.canvas.canvasDOM.width = this.canvas.width;
+            this.canvas.canvasDOM.height = this.canvas.height;
+            this.canvas.canvasDOM.style.width = w + 'px';
+            this.canvas.canvasDOM.style.height = h + 'px';
+        }
+
+        // 3. Update the camera aspect ratio and recalculate the lens
+        this.camera.aspect = w / h;
+        if (typeof this.camera.updateProjectionMatrix === 'function') {
+            this.camera.updateProjectionMatrix();
+        }
+
+        // 4. Update the final WebGL viewport mapping
         this.renderer.updateViewport(this.canvas.width, this.canvas.height);
+
+        // 5. --- THE FIX: REBUILD THE DEFERRED PIPELINE ---
+        // RenderCore's post-processing passes (SSAO, GaussBlur, Masks) use intermediate 
+        // Framebuffers (G-Buffers). These must be destroyed and recreated at the new 
+        // screen resolution, otherwise the 3D scene gets squished or cropped!
+        if (this.scene && this.light) {
+            [this.renderQueue, this.renderQueue_IOR] = this.initRenderQueue();
+        }
     }
 }
 

@@ -21,8 +21,19 @@
         height: 100%;
         font-family: "Open Sans", sans-serif;
         padding: 0;
-        margin: 3px;
+        margin: 0;
         overflow: hidden;
+      }
+
+      /* --- NEW: FORCE WEBGL CANVAS TO FILL SCREEN --- */
+      canvas {
+        display: block !important;
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: -1; /* Keep it safely behind the UI */
       }
 
       input[type="range"] {
@@ -144,9 +155,12 @@
 
       /* CENTERING RULE FOR ALL UI BLOCKS */
       .study-block {
-        max-width: 850px;
-        margin: 12vh auto;
-        text-align: left; /* Aligns all paragraphs and forms to the left */
+        width: 100% !important;
+        max-width: 800px !important;
+        margin: 12vh auto !important; 
+        padding: 0 30px !important; 
+        box-sizing: border-box !important;
+        text-align: left !important;
       }
       
       .study-block h2 {
@@ -357,6 +371,58 @@
       #vis > canvas {
         margin: 0 auto; 
       }
+
+      /* --- DESKTOP SCALING BOOSTER --- */
+      /* Triggers on laptops, desktops, and 4K monitors */
+      @media screen and (min-width: 1800px) {
+        
+        /* 1. Scale up the black HUD boxes */
+        .study-hud-box {
+          font-size: 18px !important; /* Boosted from 15px */
+          padding: 22px !important;
+        }
+        #nav-info { width: 340px !important; }
+        #context-overlay { width: 450px !important; }
+
+        /* 2. Scale up the form text and titles */
+        .study-block p, .study-block label, .study-block select {
+          font-size: 18px !important;
+        }
+        .study-block h2 {
+          font-size: 28px !important;
+        }
+
+        /* 3. Scale up the bottom Task Prompt Panel */
+        #study-prompt-panel {
+          width: 800px !important; /* Widened from 650px */
+        }
+        #task-prompt-text {
+          font-size: 22px !important; /* Make the actual question highly readable */
+        }
+        .progress-node {
+          font-size: 14px !important; /* Larger stepper text */
+          padding: 6px 12px !important;
+        }
+        
+        /* 4. Scale up ALL buttons (Overriding study.js inline styles) */
+        .study-btn {
+          font-size: 20px !important;
+          height: 60px !important;
+          width: 300px !important;
+        }
+        #task-controls button {
+          width: 160px !important;
+          height: 55px !important;
+          font-size: 18px !important;
+        }
+        
+        /* 5. Scale up the 2D View Window header */
+        #title_bar {
+            font-size: 16px !important;
+            padding: 8px 0 !important;
+        }
+      }
+      /* -------------------------------- */
     </style>
 
   </head>

@@ -168,8 +168,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 countSpan.innerText = candidateTracks.length;
             }
 
-            // --- FIX 2: Force a brand new Array in memory using [...] ---
-            window.dispatchEvent(new CustomEvent("highlightSelection", { detail: [...candidateTracks] }));
+            // --- NEW: Append the parent track to the display array so Vega keeps it highlighted ---
+            let displayArray = [...candidateTracks];
+            if (trial.parentTrack) {
+                displayArray.push(trial.parentTrack);
+            }
+
+            window.dispatchEvent(new CustomEvent("highlightSelection", { detail: displayArray }));
         }
     }
     
@@ -297,8 +302,22 @@ document.addEventListener('DOMContentLoaded', () => {
         window.dispatchEvent(new CustomEvent("applyTrialColors", { detail: trial }));
         window.dispatchEvent(new CustomEvent("applyTrialConditions", { detail: trial }));
 
+        // --- NEW: PRE-SELECT PARENT TRACK BY DEFAULT ---
+        if (trial.parentTrack) {
+            setTimeout(() => {
+                // 1. Highlight in the 3D scene
+                window.dispatchEvent(new CustomEvent("highlightSelection", { detail: [trial.parentTrack] }));
+                
+                // 2. Mathematically expand the folders and highlight in the 2D Vega scene
+                window.dispatchEvent(new CustomEvent("expandAndHighlightVega", { 
+                    detail: { expandId: trial.parentTrack, highlightIds: [trial.parentTrack] } 
+                }));
+            }, 300); // 300ms delay ensures the Vega 2D map has finished loading
+        }
+        // -----------------------------------------------
+
         // Drop the loading overlay to reveal the prepared 3D scene
-        showBlock('trials'); 
+        showBlock('trials');
 
         // --- NEW: POPULATE & SHOW HUD OVERLAYS BEFORE THE COUNTDOWN ---
         const navInfo = document.getElementById('nav-info');

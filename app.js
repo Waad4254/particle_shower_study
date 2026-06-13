@@ -294,6 +294,87 @@ class App {
             console.log(`[Study Condition] Task: ${trial.task} | Cond: ${trial.condition} -> SSAO: ${useSSAO}, IOR: ${useIOR}, Schematic: ${useSchematic}`);
         });
 
+        // --- NEW: PROGRAMMATIC VEGA TREE EXPANSION ---
+        window.addEventListener("expandAndHighlightVega", (e) => {
+            const { expandId, highlightIds } = e.detail;
+            
+            if (window.vegaView) {
+                (async function() {
+                    try {
+                        app.isUpdatingVega = true; // Shield up to prevent loop
+
+                        let allNodes = window.vegaView.data('treeCalcs') || window.vegaView.data('tree');
+                        let currentVisible = window.vegaView.data('treeClickStorePerm');
+                        
+                        if (!allNodes || !currentVisible) {
+                            app.isUpdatingVega = false;
+                            return;
+                        }
+
+                        let targetIdNum = Number(expandId);
+                        let vegaTarget = allNodes.find(n => Number(n.id) === targetIdNum);
+                        
+                        if (vegaTarget) {
+                            let pathToExpand = [];
+                            let curr = vegaTarget;
+                            
+                            while (curr) {
+                                pathToExpand.unshift(Number(curr.id));
+                                if (curr.parent === null || curr.parent === undefined) break;
+                                curr = allNodes.find(n => Number(n.id) === Number(curr.parent));
+                            }
+
+                            let visibleIds = new Set(currentVisible.map(n => Number(n.id)));
+                            let nodesToInsert = [];
+
+                            function safeInsert(nodeObj) {
+                                if (!nodeObj) return;
+                                let nid = Number(nodeObj.id);
+                                if (!visibleIds.has(nid)) {
+                                    let pid = (nodeObj.parent !== null && nodeObj.parent !== undefined) ? Number(nodeObj.parent) : null;
+                                    if (pid !== null && !visibleIds.has(pid)) {
+                                        let pNode = allNodes.find(n => Number(n.id) === pid);
+                                        if (pNode) safeInsert(pNode);
+                                        else pid = null;
+                                    }
+                                    let cleanNode = JSON.parse(JSON.stringify(nodeObj));
+                                    cleanNode.id = nid;
+                                    cleanNode.parent = pid;
+                                    nodesToInsert.push(cleanNode);
+                                    visibleIds.add(nid);
+                                }
+                            }
+
+                            for (let i = 0; i < pathToExpand.length; i++) {
+                                let pid = pathToExpand[i];
+                                let pNode = allNodes.find(n => Number(n.id) === pid);
+                                if (pNode) safeInsert(pNode);
+                                
+                                let childrenToAdd = allNodes.filter(n => Number(n.parent) === pid);
+                                for (let c of childrenToAdd) safeInsert(c);
+                            }
+
+                            if (nodesToInsert.length > 0) {
+                                let changeset = vega.changeset().insert(nodesToInsert);
+                                await window.vegaView.change('treeClickStorePerm', changeset).runAsync();
+                                await new Promise(resolve => setTimeout(resolve, 50)); // Allow Vega layout to update
+                            }
+                        }
+                        
+                        // Apply the visual highlight safely AFTER the folders are forced open
+                        await window.vegaView.signal('nodeHighlight', highlightIds).runAsync();
+
+                        app.isUpdatingVega = false; // Shield down
+                        
+                    } catch (err) { 
+                        console.warn("Vega Force Expand failed:", err); 
+                        app.isUpdatingVega = false; 
+                    }
+                })();
+            }
+        });
+        // ---------------------------------------------
+        
         window.addEventListener("highlightSelection", (e) => {
 
             app.studyHighlightedIds = e.detail;

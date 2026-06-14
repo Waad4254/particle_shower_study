@@ -44,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { task: 'T2', condition: 'A', dataset: './data/t2a_ready.json', desc: "Click on the highest-energy trajectory in this shower." },
         { task: 'T2', condition: 'A_Color', dataset: './data/t2a_ready.json', desc: "Click on the highest-energy trajectory in this shower. (Tracks are colored by Energy level)" }, 
         { task: 'T2', condition: 'B', dataset: './data/t2b_ready.json', desc: "Click on the highest-energy trajectory in this shower." },
-        { task: 'T3', condition: 'A', dataset: './data/t3b_ready.json', desc: "Find all direct daughter trajectories of the highlighted parent track.", parentTrack: 2390 },
-        { task: 'T3', condition: 'B', dataset: './data/t3b_ready.json', desc: "Find all direct daughter trajectories of the highlighted parent track.", parentTrack: 2390 }
+        { task: 'T3', condition: 'A', dataset: './data/t3b_ready.json', desc: "Find all direct daughter trajectories of the highlighted parent track.", parentTrack: 2008 },
+        { task: 'T3', condition: 'B', dataset: './data/t3b_ready.json', desc: "Find all direct daughter trajectories of the highlighted parent track.", parentTrack: 2008 }
     ];
 // blue blue, 1, 1, 575, 575
     let currentTrialIndex = 0;
@@ -65,8 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
         "T2_A": 1,           // Replace with actual highest-energy track ID for condition A
         "T2_A_Color": 1,
         "T2_B": 1,            // Replace with actual highest-energy track ID for condition B
-        "T3_A": [2396, 2397],   // Replace with actual daughter track IDs for condition A
-        "T3_B": [2396, 2397]      // Replace with actual daughter track IDs for condition B
+        "T3_A": [2017, 2018, 2019],   // Replace with actual daughter track IDs for condition A
+        "T3_B": [2017, 2018, 2019]      // Replace with actual daughter track IDs for condition B
     };
 
     // 3. Core Answer Submission and Telemetry Logic

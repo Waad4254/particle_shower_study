@@ -374,7 +374,7 @@ class App {
             }
         });
         // ---------------------------------------------
-        
+
         window.addEventListener("highlightSelection", (e) => {
 
             app.studyHighlightedIds = e.detail;
@@ -442,14 +442,32 @@ class App {
 
         window.addEventListener("resize", () => { this.resize(); }, false);
 
-        window.addEventListener("mouseup", function (event) {
-
-            app.GUIActive = false;
-        }, false);
-
+        // 1. RECORD MOUSE START POSITION
         window.addEventListener("mousedown", function (event) {
             if (event.target.id != "rc-canvas") {
-                app.GUIActive = true;
+                app.GUIActive = true; // Lock camera if clicking the UI
+            } else {
+                app.GUIActive = false; // Allow camera to move
+            }
+            // Store the exact pixel the click started on
+            app.mouseDownPos = { x: event.clientX, y: event.clientY };
+        }, false);
+
+        // 2. ONLY SELECT ON MOUSE UP (IF NO DRAGGING OCCURRED)
+        window.addEventListener("mouseup", function (event) {
+            app.GUIActive = false; // Always unlock camera on release
+
+            // Calculate how far the mouse moved between click and release
+            let dragDistance = 0;
+            if (app.mouseDownPos) {
+                const dx = event.clientX - app.mouseDownPos.x;
+                const dy = event.clientY - app.mouseDownPos.y;
+                dragDistance = Math.sqrt(dx * dx + dy * dy);
+            }
+
+            // If they clicked the UI, OR if they dragged the camera (> 5 pixels), ABORT selection!
+            if ( (event.target.id != "rc-canvas") || dragDistance > 5 ) {
+                // Do nothing, just let the camera rotate
             } else {
                 // Ensure camera matrices are perfectly up to date before calculating
                 app.camera.updateMatrixWorld();

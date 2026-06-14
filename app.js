@@ -444,20 +444,32 @@ class App {
 
         // 1. RECORD MOUSE START POSITION
         window.addEventListener("mousedown", function (event) {
-            if (event.target.id != "rc-canvas") {
-                app.GUIActive = true; // Lock camera if clicking the UI
-            } else {
-                app.GUIActive = false; // Allow camera to move
-            }
-            // Store the exact pixel the click started on
+            app.isMouseDown = true;
             app.mouseDownPos = { x: event.clientX, y: event.clientY };
+            app.clickTargetIsValid = (event.target.id === "rc-canvas" || event.target.tagName === "BODY" || event.target.tagName === "HTML");
+            
+            // --- THE FIX: ALWAYS freeze the camera on press to absorb the mouse twitch! ---
+            app.GUIActive = true; 
         }, false);
 
-        // 2. ONLY SELECT ON MOUSE UP (IF NO DRAGGING OCCURRED)
-        window.addEventListener("mouseup", function (event) {
-            app.GUIActive = false; // Always unlock camera on release
+        // 2. ONLY UNLOCK CAMERA IF THEY DRAG INTENTIONALLY
+        window.addEventListener("mousemove", function (event) {
+            if (app.isMouseDown && app.mouseDownPos && app.clickTargetIsValid) {
+                const dx = event.clientX - app.mouseDownPos.x;
+                const dy = event.clientY - app.mouseDownPos.y;
+                
+                // If they drag more than 4 pixels, they meant to move the camera. Unlock it!
+                if (Math.sqrt(dx * dx + dy * dy) > 4) {
+                    app.GUIActive = false; 
+                }
+            }
+        }, false);
 
-            // Calculate how far the mouse moved between click and release
+        // 3. ONLY SELECT ON MOUSE UP (IF NO DRAGGING OCCURRED)
+        window.addEventListener("mouseup", function (event) {
+            app.isMouseDown = false;
+            app.GUIActive = false; // Always reset and unlock on release
+
             let dragDistance = 0;
             if (app.mouseDownPos) {
                 const dx = event.clientX - app.mouseDownPos.x;
@@ -465,9 +477,9 @@ class App {
                 dragDistance = Math.sqrt(dx * dx + dy * dy);
             }
 
-            // If they clicked the UI, OR if they dragged the camera (> 5 pixels), ABORT selection!
-            if ( (event.target.id != "rc-canvas") || dragDistance > 5 ) {
-                // Do nothing, just let the camera rotate
+            // ABORT selection if they clicked the UI, dragged the camera, OR used Right/Middle click!
+            if (!app.clickTargetIsValid || dragDistance > 4 || event.button !== 0) {
+                // Do nothing, just let the camera rotate safely
             } else {
                 // Ensure camera matrices are perfectly up to date before calculating
                 app.camera.updateMatrixWorld();

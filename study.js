@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SANDBOX MODE: ?sandbox opens the free-exploration viewer, no study and no password ---
     if (params.has('sandbox')) {
+        document.body.classList.add('sandbox-mode'); // narrower settings panel (see index.html)
+        const schematicView = document.getElementById('widnow');
+        if (schematicView) schematicView.style.display = 'flex'; // 2D view is hidden by default for the study
         console.log("[Sandbox] Study disabled: free exploration mode.");
         return;
     }

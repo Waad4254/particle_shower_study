@@ -217,8 +217,13 @@
       }
 
       /* Force Tweakpane UI to be wider */
-      .tp-dfwv { 
-        width: 600px !important; 
+      .tp-dfwv {
+        width: 600px !important;
+      }
+
+      /* Sandbox mode does not need the study's extra-wide panel */
+      body.sandbox-mode .tp-dfwv {
+        width: 360px !important;
       }
 
       /* 1. THE MAGIC BULLET: Destroy the default flex-basis */

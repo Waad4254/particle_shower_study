@@ -4,7 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Parse URL Parameters
     const params = new URLSearchParams(window.location.search);
     const isStudyMode = params.has('study'); // Checks if ?study exists anywhere in URL
-    
+
+    // --- SANDBOX MODE: ?sandbox opens the free-exploration viewer, no study and no password ---
+    if (params.has('sandbox')) {
+        console.log("[Sandbox] Study disabled: free exploration mode.");
+        return;
+    }
+
     // --- SECURITY GATE 1: Block non-study access ---
     if (!isStudyMode) {
         document.body.innerHTML = `

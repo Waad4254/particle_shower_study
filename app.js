@@ -3838,9 +3838,9 @@ function gaussianKernel(radius, sigma)
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- SECURITY GATE: Abort the 3D Engine if not in study mode ---
+    // --- SECURITY GATE: Abort the 3D Engine unless in study or sandbox mode ---
     const params = new URLSearchParams(window.location.search);
-    if (!params.has('study')) {
+    if (!params.has('study') && !params.has('sandbox')) {
         console.warn("Direct access blocked. 3D Engine aborted.");
         return; // This completely stops WebGL and Tweakpane from loading!
     }
